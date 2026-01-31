@@ -1,192 +1,224 @@
-import React, { useState } from 'react';
-// import Navbar from '../components/Navbar';  <-- ❌ ഇത് വേണ്ട
-import { User, Phone, Mail, Calendar, Clock, LogOut, Scissors, CheckCircle, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { getUserProfile, getMyBookings, cancelBooking } from '../services/api'; 
+import { Calendar, Clock, LogOut, Scissors, Loader2, ArrowRight, Star, XCircle } from 'lucide-react'; 
+import { Link, useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
-  const [activeTab, setActiveTab] = useState('upcoming'); 
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  
+  const [activeTab, setActiveTab] = useState('upcoming');
+  const [profile, setProfile] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState(null); 
 
-  // Mock User Data
-  const user = {
-    name: 'Salman Faris',
-    phone: '+91 98765 43210',
-    email: 'salman@example.com',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-    points: 120
+  // Data Fetching Function
+  const fetchProfileData = async () => {
+      try {
+        const [profileData, bookingsData] = await Promise.all([
+          getUserProfile(),
+          getMyBookings()
+        ]);
+        setProfile(profileData);
+        setBookings(bookingsData);
+      } catch (err) {
+        console.error("Profile Error:", err);
+      } finally {
+        setLoading(false);
+      }
   };
 
-  // Mock Live Status
-  const liveStatus = {
-    stylistName: 'Alex',
-    stylistStatus: 'Busy', 
-    currentTask: 'Fade Cut',
-    estimatedFinishTime: '15 mins', 
-    queuePosition: 2 
-  };
+  useEffect(() => {
+    setLoading(true);
+    fetchProfileData();
+  }, []);
 
-  // Mock Bookings
-  const bookings = [
-    {
-      id: '#TOKEN-7782',
-      service: 'Fade Cut & Beard',
-      date: 'Today, 12 Oct',
-      time: '04:00 PM',
-      stylist: 'Alex',
-      status: 'upcoming',
-      step: 2, 
-      price: '₹400'
-    },
-    {
-      id: '#TOKEN-6654',
-      service: 'Hair Spa',
-      date: '25 Sep',
-      time: '10:00 AM',
-      stylist: 'Sam',
-      status: 'completed',
-      step: 4,
-      price: '₹500'
+  // Handle Cancel Function
+  const handleCancel = async (bookingId) => {
+    if(!window.confirm("Are you sure you want to cancel this booking?")) return;
+
+    setCancellingId(bookingId);
+    try {
+        await cancelBooking(bookingId);
+        await fetchProfileData(); 
+    } catch (error) {
+        alert("Failed to cancel booking");
+        console.error(error);
+    } finally {
+        setCancellingId(null);
     }
-  ];
+  };
 
-  // Tracking Bar Component
-  const TrackingBar = ({ currentStep }) => (
-    <div className="mt-4 mb-2">
-      <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
-        <span className={currentStep >= 1 ? 'text-crimson' : ''}>Booked</span>
-        <span className={currentStep >= 2 ? 'text-crimson' : ''}>Confirmed</span>
-        <span className={currentStep >= 3 ? 'text-green-600' : ''}>Done</span>
-      </div>
-      <div className="h-1.5 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden flex">
-        <div className={`h-full ${currentStep >= 1 ? 'bg-crimson' : 'bg-transparent'} w-1/3 transition-all duration-500`}></div>
-        <div className={`h-full ${currentStep >= 2 ? 'bg-crimson' : 'bg-transparent'} w-1/3 transition-all duration-500 border-l border-white/20`}></div>
-        <div className={`h-full ${currentStep >= 3 ? 'bg-green-500' : 'bg-transparent'} w-1/3 transition-all duration-500 border-l border-white/20`}></div>
-      </div>
-    </div>
-  );
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // 📅 Date Formatter
+  const formatDate = (dateString) => {
+    if (!dateString) return "Date Pending";
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? dateString : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  // ⏰ Time Formatter (FIXED HERE)
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "";
+    
+    // If it's a full ISO string (like 2024-01-30T10:00:00)
+    if (timeStr.includes('T')) {
+        return new Date(timeStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+    
+    // If it's just time from Django (e.g., "14:30:00") -> Cut seconds
+    return timeStr.slice(0, 5); // Returns "14:30"
+  };
 
   const filteredBookings = bookings.filter(b => 
-    activeTab === 'upcoming' ? b.status === 'upcoming' : b.status === 'completed'
+    activeTab === 'upcoming' 
+      ? (b.status === 'PENDING' || b.status === 'CONFIRMED' || b.status === 'IN_PROGRESS') 
+      : (b.status === 'COMPLETED' || b.status === 'CANCELLED')
   );
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <Loader2 className="animate-spin text-crimson" size={40} />
+      </div>
+    );
+  }
+
   return (
-    // ✅ Navbar removed from here. 
-    // Padding kept to prevent overlap with fixed App Navbar
-    <div className="min-h-[100dvh] bg-[var(--bg-primary)] transition-colors duration-300 pt-24 pb-32 px-4 md:px-8 overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-[var(--bg-primary)] transition-colors duration-300 pt-24 pb-32 px-4 md:px-0">
       
-      {/* <Navbar />  <-- ❌ REMOVED */}
-
-      <div className="max-w-4xl mx-auto animate-fade-in">
+      <div className="max-w-xl mx-auto animate-fade-in space-y-6">
         
-        {/* 1. PROFILE HEADER */}
-        <div className="bg-white dark:bg-[#1a0507] border border-gray-200 dark:border-white/10 rounded-3xl p-5 shadow-lg mb-6 relative overflow-hidden">
-           <div className="flex items-center gap-4">
-             {/* Avatar */}
-             <div className="relative shrink-0">
-               <img src={user.avatar} alt="Profile" className="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-gray-100 dark:border-white/5 object-cover" />
-               <div className="absolute bottom-0 right-0 bg-green-500 w-4 h-4 rounded-full border-2 border-white dark:border-black"></div>
-             </div>
-             
-             {/* Info */}
-             <div className="flex-1 min-w-0">
-               <h1 className="text-lg md:text-xl font-serif font-bold text-[var(--text-primary)] truncate">{user.name}</h1>
-               <p className="text-gray-500 text-xs truncate mb-2">{user.email}</p>
-               <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg text-[10px] font-bold text-yellow-700 dark:text-yellow-500">
-                  <span>⭐ {user.points} Points</span>
-               </div>
-             </div>
-
-             {/* Logout */}
-             <button className="p-2 rounded-full bg-gray-50 dark:bg-white/5 text-gray-400 hover:text-crimson transition">
-                <LogOut size={18} />
-             </button>
-           </div>
+        {/* PROFILE CARD */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#3F0D12] to-[#98111E] p-6 shadow-xl mx-2">
+           <div className="relative z-10 flex items-center gap-4">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-4 border-white/20 overflow-hidden">
+                  <img src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${profile?.username || 'User'}&background=random&color=fff`} className="w-full h-full object-cover"/>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold text-white truncate">{profile?.username}</h2>
+                <p className="text-white/70 text-sm truncate">{profile?.email}</p>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-white text-xs font-semibold bg-black/20 px-2 py-0.5 rounded-lg">⭐ {profile?.points || 0} pts</span>
+                  <span className="text-white/70 text-xs">{bookings.length} bookings</span>
+                </div>
+              </div>
+              <button onClick={handleLogout} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition backdrop-blur-md">
+                 <LogOut size={18} className="text-white" />
+              </button>
+            </div>
         </div>
 
-        {/* 2. LIVE TRACKING CARD */}
-        {activeTab === 'upcoming' && filteredBookings.length > 0 && (
-          <div className="mb-6 bg-gradient-to-br from-gray-900 to-black text-white p-5 rounded-3xl shadow-xl relative overflow-hidden border border-gray-800">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-crimson/20 rounded-full blur-3xl"></div>
-            
-            <div className="flex items-center gap-2 mb-4">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-crimson opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-crimson"></span>
-              </span>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-crimson">Live Queue</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-gray-400 text-[10px] uppercase mb-1">Status</p>
-                <p className="text-sm font-bold text-white truncate">
-                  {liveStatus.stylistName} is <span className="text-crimson">{liveStatus.stylistStatus}</span>
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-gray-400 text-[10px] uppercase mb-1">Est. Wait</p>
-                <p className="text-lg font-bold text-white leading-none">{liveStatus.estimatedFinishTime}</p>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-white/10 flex justify-between items-center">
-               <div className="text-xs text-gray-400">
-                 Current: <span className="text-white font-medium">{liveStatus.currentTask}</span>
-               </div>
-               <div className="bg-crimson px-2 py-0.5 rounded text-[10px] font-bold">
-                 #{liveStatus.queuePosition} in line
-               </div>
-            </div>
+        {/* TABS */}
+         <div className="bg-[var(--card-bg)] rounded-2xl p-1.5 border border-[var(--border-color)] shadow-sm mx-2">
+          <div className="flex relative">
+            {['upcoming', 'history'].map((tab) => (
+              <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 rounded-xl text-xs font-bold capitalize transition-all relative z-10 ${activeTab === tab ? 'text-crimson bg-[var(--bg-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+                {tab}
+              </button>
+            ))}
           </div>
-        )}
-
-        {/* 3. TABS */}
-        <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-xl mb-6">
-          {['upcoming', 'history'].map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-2.5 text-xs font-bold rounded-lg capitalize transition-all ${activeTab === tab ? 'bg-white dark:bg-[#1a0507] text-crimson shadow-sm' : 'text-gray-400'}`}>
-              {tab}
-            </button>
-          ))}
         </div>
 
-        {/* 4. BOOKINGS LIST */}
-        <div className="space-y-4">
+        {/* BOOKINGS LIST */}
+        <div className="space-y-3 mx-2">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">
+              {activeTab === 'upcoming' ? 'Upcoming' : 'History'}
+            </h3>
+            <span className="text-xs px-2 py-1 bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] rounded-lg font-medium">
+              {filteredBookings.length} Total
+            </span>
+          </div>
+
           {filteredBookings.length > 0 ? (
             filteredBookings.map((booking) => (
-              <div key={booking.id} className="bg-[var(--card-bg)] border border-gray-100 dark:border-white/5 p-5 rounded-2xl shadow-sm hover:shadow-md transition">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 shrink-0 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center text-[var(--text-primary)]">
-                      <Scissors size={18} />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-[var(--text-primary)] text-sm truncate">{booking.service}</h3>
-                      <p className="text-[10px] text-gray-400 font-medium tracking-wide truncate">{booking.id}</p>
-                    </div>
+              <div key={booking.id} className="group bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 hover:border-crimson/30 hover:shadow-lg transition-all duration-300">
+                
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                     <div className="w-12 h-12 rounded-xl bg-[var(--bg-primary)] flex items-center justify-center">
+                        <Scissors size={20} className="text-[var(--text-secondary)]" />
+                     </div>
+                     <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full 
+                                ${booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 
+                                booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 
+                                booking.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 
+                                'bg-gray-100 text-gray-600'}`}>
+                                {booking.status}
+                            </span>
+                        </div>
+                        <h4 className="font-bold text-[var(--text-primary)] text-base line-clamp-1">
+                            {booking.items?.[0]?.service_name || "Hair Service"}
+                        </h4>
+                     </div>
                   </div>
-                  <span className="text-lg font-bold text-crimson shrink-0">{booking.price}</span>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-crimson">₹{booking.total_price}</p>
+                  </div>
                 </div>
 
-                {booking.status === 'upcoming' && <TrackingBar currentStep={booking.step} />}
-
-                <div className="flex items-center gap-4 mt-4 text-xs text-gray-500">
-                  <div className="flex items-center gap-1.5"><Calendar size={14} className="text-crimson"/> {booking.date}</div>
-                  <div className="flex items-center gap-1.5"><Clock size={14} className="text-crimson"/> {booking.time}</div>
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-primary)] p-2 rounded-lg">
+                    <Calendar size={14} className="text-crimson" />
+                    <span>{formatDate(booking.booking_date || booking.created_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-primary)] p-2 rounded-lg">
+                    <Clock size={14} className="text-crimson" />
+                    {/* 👇 Updated Logic Here */}
+                    <span>{formatTime(booking.booking_time)}</span>
+                  </div>
                 </div>
 
-                {booking.status === 'upcoming' ? (
-                   <Link to="/success" state={{ bookingDetails: booking }} className="mt-4 w-full py-2.5 bg-crimson text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition">
-                      View Token <ArrowRight size={14} />
-                   </Link>
+                {/* Action Buttons */}
+                {activeTab === 'upcoming' ? (
+                    <div className="flex gap-2">
+                        {/* View Ticket (Mapping fixed for Success Page) */}
+                        <Link 
+                            to="/success" 
+                            state={{ 
+                                booking: booking, 
+                                service: { name: booking.items?.[0]?.service_name } // Fix for Success Page structure
+                            }}
+                            className="flex-1 py-3 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-crimson hover:text-white transition-colors"
+                        >
+                            View Ticket <ArrowRight size={14} />
+                        </Link>
+                        
+                        {/* Cancel Button */}
+                        <button 
+                            onClick={() => handleCancel(booking.id)}
+                            disabled={cancellingId === booking.id}
+                            className="w-12 flex items-center justify-center border border-red-200 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
+                        >
+                            {cancellingId === booking.id ? <Loader2 size={16} className="animate-spin"/> : <XCircle size={18} />}
+                        </button>
+                    </div>
                 ) : (
-                  <button className="mt-4 w-full py-2.5 border border-gray-200 dark:border-white/10 text-[var(--text-primary)] text-xs font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition">
-                    Book Again
-                  </button>
+                    <button className="w-full py-3 border border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl text-xs font-bold hover:bg-[var(--bg-primary)] cursor-default">
+                        {booking.status === 'CANCELLED' ? 'Cancelled' : 'Completed'}
+                    </button>
                 )}
               </div>
             ))
           ) : (
-            <div className="py-12 text-center text-gray-400 bg-[var(--card-bg)] rounded-3xl border border-dashed border-gray-200 dark:border-white/10">
-              <p className="text-sm">No bookings found</p>
+            <div className="text-center py-12 bg-[var(--card-bg)] rounded-3xl border border-dashed border-[var(--border-color)]">
+              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[var(--bg-primary)] flex items-center justify-center">
+                <Scissors size={24} className="text-[var(--text-secondary)]" />
+              </div>
+              <h4 className="text-sm font-semibold text-[var(--text-primary)]">No {activeTab} bookings</h4>
             </div>
           )}
         </div>

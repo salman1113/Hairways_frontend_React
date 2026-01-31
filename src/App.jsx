@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 // Components
 import IntroScreen from './components/IntroScreen';
 import Loader from './components/Loader';
-import Navbar from './components/Navbar'; // 👈 Navbar Import
+import Navbar from './components/Navbar'; 
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -37,10 +37,11 @@ const AppContent = () => {
     <>
       {pageLoading && <Loader />}
       
-      {/* ✅ NAVBAR IS HERE NOW - FOR ALL PAGES */}
+      {/* ✅ NAVBAR FOR ALL PAGES */}
       <Navbar /> 
       
-      <div className={pageLoading ? "opacity-0" : "opacity-100 transition-opacity duration-500"}>
+      {/* Added pb-24 md:pb-0 to prevent content hiding behind mobile navbar */}
+      <div className={`transition-opacity duration-500 pb-24 md:pb-0 ${pageLoading ? "opacity-0" : "opacity-100"}`}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />

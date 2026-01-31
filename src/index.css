@@ -29,7 +29,7 @@
 .dark {
   --bg-primary: var(--color-bordeaux);
   --text-primary: var(--color-soft-blush);
-  --card-bg: #2A080C;
+  --card-bg: #1e0c0ea5;
 }
 
 body {
