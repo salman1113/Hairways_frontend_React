@@ -1,115 +1,109 @@
-import React from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext'; // 👈 Import Auth
-import { Sun, Moon, Scissors, Home, Grid, Calendar, User, Info, LogIn } from 'lucide-react';
+import { Menu, X, Scissors, User } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react'; // Import Icons
+import { useTheme } from '../context/ThemeContext'; // Import Hook
 
 const Navbar = () => {
-  const { isDarkMode, toggleTheme } = useTheme();
-  const { isAuthenticated } = useAuth(); // 👈 Check Login Status
-  const location = useLocation(); 
+  const { user, logout } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
+
+  // Handle Scroll Effect
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const navLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'Services', path: '/services' },
+    { name: 'Book Now', path: '/book' },
+    { name: 'About', path: '/about' },
+  ];
+
   const isActive = (path) => location.pathname === path;
 
   return (
-    <>
-      {/* --- DESKTOP VIEW --- */}
-      <div className="hidden md:flex fixed top-6 left-0 right-0 z-50 justify-center px-4">
-        <nav className={`w-full max-w-5xl rounded-full backdrop-blur-xl border shadow-2xl transition-all duration-300
-          ${isDarkMode ? 'bg-black/60 border-white/10 text-white' : 'bg-white/90 border-gray-200 text-gray-900'}`}>
-          <div className="px-6 py-3 flex justify-between items-center">
-            
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="p-2 bg-crimson rounded-full text-white shadow-lg group-hover:rotate-12 transition-transform">
-                <Scissors size={18} />
-              </div>
-              <span className="text-xl font-serif font-bold tracking-wide">Hair Ways</span>
-            </Link>
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[var(--bg-secondary)]/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+      <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
 
-            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full border ${isDarkMode ? 'bg-white/10 border-white/5' : 'bg-gray-100 border-gray-200'}`}>
-              {[{name: 'Home', path: '/'}, {name: 'Services', path: '/services'}, {name: 'About', path: '/about'}].map((item) => (
-                <Link key={item.name} to={item.path} className={`px-5 py-2 rounded-full text-sm font-medium transition ${isActive(item.path) ? 'bg-crimson text-white shadow-md' : 'hover:bg-gray-200 dark:hover:bg-white/10'}`}>
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition">
-                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-              
-              <Link to="/book" className="hidden lg:flex items-center gap-2 px-5 py-2 bg-crimson text-white text-sm font-bold rounded-full shadow-lg hover:bg-ruby transition hover:scale-105">
-                <Calendar size={16} /> Book Now
-              </Link>
-
-              {/* 👇 DESKTOP LOGIC: Login vs Profile */}
-              {isAuthenticated ? (
-                <Link to="/profile" className={`px-5 py-2 border text-sm font-bold rounded-full transition flex items-center gap-2 ${isActive('/profile') ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-black' : (isDarkMode ? 'bg-white/10 border-white/10 hover:bg-white/20' : 'bg-white border-gray-200 hover:bg-gray-50')}`}>
-                  <User size={16} /> Profile
-                </Link>
-              ) : (
-                <Link to="/login" className={`px-5 py-2 border text-sm font-bold rounded-full transition flex items-center gap-2 ${isActive('/login') ? 'bg-crimson text-white border-crimson' : (isDarkMode ? 'bg-white/10 border-white/10 hover:bg-white/20' : 'bg-white border-gray-200 hover:bg-gray-50')}`}>
-                  <LogIn size={16} /> Login
-                </Link>
-              )}
-            </div>
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 bg-[var(--text-primary)] rounded-full flex items-center justify-center text-[var(--bg-primary)] group-hover:bg-[var(--accent-crimson)] transition-colors">
+            <Scissors size={20} />
           </div>
-        </nav>
-      </div>
-
-      {/* --- MOBILE VIEW --- */}
-      <div className={`md:hidden fixed top-0 w-full z-40 px-4 py-3 flex justify-between items-center border-b transition-colors duration-300 ${isDarkMode ? 'bg-black border-white/10 text-white' : 'bg-white border-gray-200 text-gray-900'}`}>
-        <Link to="/" className="flex items-center gap-2">
-          <div className="p-1.5 bg-crimson rounded-lg text-white"><Scissors size={16} /></div>
-          <span className="text-lg font-serif font-bold">Hair Ways</span>
+          <span className="font-serif text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+            Hair<span className="text-[var(--accent-crimson)]"> Ways</span>
+          </span>
         </Link>
-        <button onClick={toggleTheme} className="p-2 rounded-full bg-gray-100 dark:bg-white/10">
-          {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center gap-8">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              to={link.path}
+              className={`text-sm font-medium tracking-wide transition-colors hover:text-[var(--accent-crimson)] ${isActive(link.path) ? 'text-[var(--accent-crimson)] font-semibold' : 'text-[var(--text-primary)]'}`}
+            >
+              {link.name}
+            </Link>
+          ))}
+        </div>
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-full text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors mr-2"
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
+        {/* Auth Button */}
+        <div className="hidden md:flex items-center gap-4">
+          {user ? (
+            <Link to="/profile" className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-color)] hover:border-[var(--accent-crimson)] transition-all">
+              <User size={18} />
+              <span className="text-sm font-medium">{user.username}</span>
+            </Link>
+          ) : (
+            <Link to="/login" className="px-6 py-2 bg-[var(--text-primary)] text-white text-sm font-medium rounded-full hover:bg-[var(--accent-crimson)] transition-all shadow-lg hover:shadow-xl">
+              Sign In
+            </Link>
+          )}
+        </div>
+
+        {/* Mobile Toggle */}
+        <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-[var(--text-primary)]">
+          {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
-      <div className={`md:hidden fixed bottom-0 w-full z-50 border-t shadow-[0_-5px_20px_rgba(0,0,0,0.1)] pb-safe transition-colors duration-300 ${isDarkMode ? 'bg-[#1a0507] border-white/10' : 'bg-white border-gray-200'}`}>
-        <div className="grid grid-cols-5 h-[65px] relative items-center">
-          
-          <Link to="/" className="flex flex-col items-center justify-center gap-1">
-            <Home size={22} className={isActive('/') ? 'text-crimson fill-crimson/20' : 'text-gray-400'} />
-            <span className={`text-[9px] font-bold ${isActive('/') ? 'text-crimson' : 'text-gray-400'}`}>Home</span>
-          </Link>
-
-          <Link to="/services" className="flex flex-col items-center justify-center gap-1">
-            <Grid size={22} className={isActive('/services') ? 'text-crimson fill-crimson/20' : 'text-gray-400'} />
-            <span className={`text-[9px] font-bold ${isActive('/services') ? 'text-crimson' : 'text-gray-400'}`}>Service</span>
-          </Link>
-
-          <div className="flex justify-center items-center relative h-full">
-             <div className="absolute -top-8">
-                <Link to="/book">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transform transition-transform active:scale-95 border-[4px] ${isDarkMode ? 'bg-crimson border-[#1a0507]' : 'bg-crimson border-white'}`}>
-                    <Calendar size={24} />
-                  </div>
-                </Link>
-             </div>
-          </div>
-
-          <Link to="/about" className="flex flex-col items-center justify-center gap-1">
-             <Info size={22} className={isActive('/about') ? 'text-crimson fill-crimson/20' : 'text-gray-400'} />
-             <span className={`text-[9px] font-bold ${isActive('/about') ? 'text-crimson' : 'text-gray-400'}`}>About</span>
-          </Link>
-          
-          {/* 👇 MOBILE LOGIC: Always shows 'Profile' icon, but redirects based on login */}
-          <Link 
-            to={isAuthenticated ? "/profile" : "/login"} 
-            className="flex flex-col items-center justify-center gap-1"
-          >
-            <User size={22} className={isActive('/profile') || isActive('/login') ? 'text-crimson fill-crimson/20' : 'text-gray-400'} />
-            <span className={`text-[9px] font-bold ${isActive('/profile') || isActive('/login') ? 'text-crimson' : 'text-gray-400'}`}>
-              Profile {/* പേര് Profile എന്ന് തന്നെ ഇരിക്കും */}
-            </span>
-          </Link>
-
+      {/* Mobile Menu Overlay */}
+      {isOpen && (
+        <div className="absolute top-full left-0 w-full bg-[var(--bg-secondary)] border-t border-[var(--border-color)] p-6 flex flex-col gap-4 shadow-xl md:hidden animate-fade-in">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              to={link.path}
+              onClick={() => setIsOpen(false)}
+              className="text-lg font-serif font-medium text-[var(--text-primary)] hover:text-[var(--accent-crimson)]"
+            >
+              {link.name}
+            </Link>
+          ))}
+          <hr className="border-[var(--border-color)]" />
+          {user ? (
+            <Link to="/profile" className="text-lg font-medium">My Profile</Link>
+          ) : (
+            <Link to="/login" className="text-lg font-medium text-[var(--accent-crimson)]">Sign In / Register</Link>
+          )}
         </div>
-      </div>
-    </>
+      )}
+    </nav>
   );
 };
 

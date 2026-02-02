@@ -4,101 +4,52 @@
 /* 2. Tailwind Import */
 @import "tailwindcss";
 
-/* 3. Theme Configuration */
-@theme {
-  /* Colors */
-  --color-soft-blush: #FBE4E3;
-  --color-crimson: #D72638;
-  --color-ruby: #98111E;
-  --color-bordeaux: #3F0D12;
-  --color-white: #FFFFFF;
-  --color-black: #000000;
 
-  /* Fonts */
-  --font-serif: "Playfair Display", serif;
-  --font-sans: "Inter", sans-serif;
-}
-
-/* 4. Dark Mode Logic */
 :root {
-  --bg-primary: var(--color-soft-blush);
-  --text-primary: var(--color-bordeaux);
-  --card-bg: var(--color-white);
+  /* Luxury Color Palette based on your preference */
+  --bg-primary: #FFF0F1; /* Soft Blush Light */
+  --bg-secondary: #FFFFFF;
+  --text-primary: #3F0D12; /* Bordeaux */
+  --text-secondary: #785A5D;
+  --accent-crimson: #D72638;
+  --border-color: #EACCCC;
 }
 
 .dark {
-  --bg-primary: var(--color-bordeaux);
-  --text-primary: var(--color-soft-blush);
-  --card-bg: #1e0c0ea5;
+  --bg-primary: #2A090C; /* Deep Bordeaux */
+  --bg-secondary: #1F0507;
+  --text-primary: #FBE4E3;
+  --text-secondary: #D4B8BA;
+  --accent-crimson: #FF4D5E;
+  --border-color: #4A1A21;
 }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: var(--font-sans);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-serif);
-  font-weight: 700;
+  font-family: 'Playfair Display', serif;
 }
 
-
-/* --- SCISSOR & LOADING ANIMATIONS --- */
-
-/* 1. Scissor Cutting Action */
-@keyframes snip {
-  0% { transform: rotate(0deg); }
-  50% { transform: rotate(-25deg); } /* വെട്ടുമ്പോൾ അരിയുന്ന ആംഗിൾ */
-  100% { transform: rotate(0deg); }
+/* Smooth Fade In Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-snip {
-  animation: snip 0.8s ease-in-out infinite; /* വേഗത്തിൽ വെട്ടാൻ */
-  transform-origin: center;
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
 }
 
-/* 2. Red Loading Bar */
-@keyframes loading-width {
-  0% { width: 0%; }
-  50% { width: 70%; }
-  100% { width: 100%; }
-}
-
-.animate-load-bar {
-  animation: loading-width 1.5s ease-in-out infinite;
-}
-
-
-/* Intro Slide Up Animation */
-@keyframes slide-up {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(-100%); opacity: 1; }
-}
-
-.animate-slide-up {
-  animation: slide-up 0.8s ease-in-out forwards;
-}
-
-/* Scissor Snip (പഴയത് തന്നെ) */
-@keyframes snip {
-  0% { transform: rotate(0deg); }
-  50% { transform: rotate(-25deg); }
-  100% { transform: rotate(0deg); }
-}
-.animate-snip {
-  animation: snip 0.8s ease-in-out infinite;
-}
-
-
-
-/* Hide Scrollbar for Chrome, Safari and Opera */
+/* Hide Scrollbar but allow scroll */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
-/* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

@@ -3,30 +3,28 @@ import { Scissors } from 'lucide-react';
 
 const Loader = () => {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center 
-      bg-white/95 dark:bg-[#2A080C]/95 backdrop-blur-md transition-colors duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--bg-secondary)]/90 backdrop-blur-lg transition-colors duration-300">
       
       <div className="flex flex-col items-center">
         
-        {/* Scissor with Adaptive Colors */}
-        <div className="relative p-5 rounded-full border shadow-xl
-          bg-white border-crimson/20 
-          dark:bg-white/5 dark:border-white/10">
+        {/* Scissor Circle */}
+        <div className="relative p-6 rounded-full border border-[var(--border-color)] shadow-2xl bg-[var(--bg-primary)] ring-1 ring-[var(--border-color)]">
           
           <Scissors 
-            size={56} 
-            className="animate-snip 
-            text-crimson 
-            dark:text-[var(--color-soft-blush)]" 
+            size={48} 
+            className="animate-snip text-[var(--accent-crimson)] drop-shadow-md" 
           />
         </div>
 
-        {/* Text changing based on theme */}
-        <h2 className="mt-6 text-xl font-serif font-bold tracking-widest
-          text-[var(--color-bordeaux)] 
-          dark:text-[var(--color-soft-blush)]">
+        {/* Loading Text */}
+        <h2 className="mt-8 text-sm font-serif font-bold tracking-[0.3em] text-[var(--text-primary)] animate-pulse">
           LOADING...
         </h2>
+
+        {/* Loading Bar */}
+        <div className="w-24 h-1 bg-[var(--border-color)] rounded-full mt-4 overflow-hidden">
+            <div className="h-full bg-[var(--accent-crimson)] w-1/2 animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+        </div>
 
       </div>
     </div>
