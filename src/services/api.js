@@ -66,11 +66,23 @@ export const getAdminStats = async () => {
   return response.data;
 };
 
-// 🔥 FIX: Added getCategories back!
 export const getCategories = async () => {
   const response = await api.get('/services/categories/');
   return response.data;
 };
+
+// ... existing getCategories ...
+
+export const createCategory = async (data) => {
+  const response = await api.post('/services/categories/', data);
+  return response.data;
+};
+
+export const deleteCategory = async (id) => {
+  await api.delete(`/services/categories/${id}/`);
+  return response.data;
+};
+
 
 export const getServices = async () => {
   const response = await api.get('/services/services/');
@@ -98,9 +110,19 @@ export const deleteEmployee = async (id) => {
   await api.delete(`/accounts/employees/${id}/`);
 };
 
+export const updateEmployee = async (id, data) => {
+    const response = await api.patch(`/accounts/employees/${id}/`, data);
+    return response.data;
+};
+
 export const punchAttendance = async () => { 
   const response = await api.post('/accounts/attendance/punch/');
   return response.data;
+};
+
+export const getEmployeeAttendance = async (employeeId) => {
+    const response = await api.get(`/accounts/attendance/?employee=${employeeId}`);
+    return response.data;
 };
 
 // --- BOOKINGS & JOB TIMER ---
@@ -114,9 +136,16 @@ export const getMyBookings = async () => {
   return response.data;
 };
 
-export const getQueue = async () => {
-  const response = await api.get('/bookings/bookings/'); 
+// 🔥 FIX: Updated getQueue to accept Date Filter (Solves 500 Error)
+export const getQueue = async (date) => {
+  const url = date ? `/bookings/bookings/?date=${date}` : '/bookings/bookings/';
+  const response = await api.get(url); 
   return response.data;
+};
+
+export const updateBookingStatus = async (id, statusData) => {
+    const response = await api.patch(`/bookings/bookings/${id}/`, statusData);
+    return response.data;
 };
 
 export const startJob = async (id) => { 
@@ -150,15 +179,12 @@ export const createProduct = async (productData) => {
   return response.data;
 };
 
-export const updateEmployee = async (id, data) => {
-    const response = await api.patch(`/accounts/employees/${id}/`, data);
-    return response.data;
-};
-
-// 🔥 GET SPECIFIC ATTENDANCE
-export const getEmployeeAttendance = async (employeeId) => {
-    const response = await api.get(`/accounts/attendance/?employee=${employeeId}`);
-    return response.data;
+// Add inside src/services/api.js
+export const updateService = async (id, serviceData) => {
+  const response = await api.patch(`/services/services/${id}/`, serviceData, {
+    headers: { 'Content-Type': 'multipart/form-data' } 
+  });
+  return response.data;
 };
 
 export default api;
