@@ -1,22 +1,24 @@
-/* 1. Google Fonts Import (ഇത് ഏറ്റവും മുകളിൽ തന്നെ വരണം!) */
+/* 1. Google Fonts Import */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap');
 
 /* 2. Tailwind Import */
 @import "tailwindcss";
 
-
 :root {
   /* Luxury Color Palette based on your preference */
-  --bg-primary: #FFF0F1; /* Soft Blush Light */
+  --bg-primary: #FFF0F1;
+  /* Soft Blush Light */
   --bg-secondary: #FFFFFF;
-  --text-primary: #3F0D12; /* Bordeaux */
+  --text-primary: #3F0D12;
+  /* Bordeaux */
   --text-secondary: #785A5D;
   --accent-crimson: #D72638;
   --border-color: #EACCCC;
 }
 
 .dark {
-  --bg-primary: #2A090C; /* Deep Bordeaux */
+  --bg-primary: #2A090C;
+  /* Deep Bordeaux */
   --bg-secondary: #1F0507;
   --text-primary: #FBE4E3;
   --text-secondary: #D4B8BA;
@@ -31,14 +33,26 @@ body {
   overflow-x: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Playfair Display', serif;
 }
 
 /* Smooth Fade In Animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
@@ -47,9 +61,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Hide Scrollbar but allow scroll */
 .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
+
 .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

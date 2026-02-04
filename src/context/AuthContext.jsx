@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { getUserProfile, loginUser as apiLogin, logoutUser } from '../services/api'; 
+import { getUserProfile, loginUser as apiLogin, logoutUser } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -16,13 +16,11 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('access_token');
             if (token) {
                 try {
-                    // ടോക്കൺ ഉണ്ടെങ്കിൽ, അത് വെച്ച് യൂസറുടെ വിവരങ്ങൾ എടുക്കുന്നു
                     const userData = await getUserProfile();
                     setUser(userData);
                 } catch (error) {
                     console.error("Session expired:", error);
-                    // ടോക്കൺ തെറ്റാണെങ്കിൽ ലോഗൗട്ട് ചെയ്യുന്നു
-                    logout(); 
+                    logout();
                 }
             }
             setLoading(false);
@@ -32,10 +30,8 @@ export const AuthProvider = ({ children }) => {
 
     // 🔐 2. Login Function
     const login = async (email, password) => {
-        // api.js ലെ loginUser വിളിക്കുന്നു (ഇത് ടോക്കൺ ഓട്ടോമാറ്റിക് ആയി സേവ് ചെയ്യും)
         await apiLogin(email, password);
-        
-        // ലോഗിൻ വിജയിച്ചാൽ ഉടനെ യൂസർ പ്രൊഫൈൽ എടുക്കുന്നു
+
         const userData = await getUserProfile();
         setUser(userData);
         return userData;
