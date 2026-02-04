@@ -27,7 +27,7 @@ api.interceptors.response.use(
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
-         window.location.href = '/login'; 
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
@@ -38,10 +38,21 @@ api.interceptors.response.use(
 export const loginUser = async (email, password) => {
   const response = await api.post('/accounts/login/', { email, password });
   if (response.data.access) {
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+    localStorage.setItem('access_token', response.data.access);
+    localStorage.setItem('refresh_token', response.data.refresh);
   }
   return response.data;
+};
+
+export const googleLogin = async (idToken) => {
+  try {
+    const response = await api.post('/accounts/google-login/', {
+      id_token: idToken
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : error;
+  }
 };
 
 export const registerUser = async (userData) => {
@@ -50,7 +61,7 @@ export const registerUser = async (userData) => {
 };
 
 export const getUserProfile = async () => {
-  const response = await api.get('/accounts/users/me/'); 
+  const response = await api.get('/accounts/users/me/');
   return response.data;
 };
 
@@ -62,7 +73,7 @@ export const logoutUser = () => {
 
 // --- ADMIN & SERVICES ---
 export const getAdminStats = async () => {
-  const response = await api.get('/bookings/bookings/stats/'); 
+  const response = await api.get('/bookings/bookings/stats/');
   return response.data;
 };
 
@@ -91,7 +102,7 @@ export const getServices = async () => {
 
 export const createService = async (serviceData) => {
   const response = await api.post('/services/services/', serviceData, {
-    headers: { 'Content-Type': 'multipart/form-data' } 
+    headers: { 'Content-Type': 'multipart/form-data' }
   });
   return response.data;
 };
@@ -111,18 +122,18 @@ export const deleteEmployee = async (id) => {
 };
 
 export const updateEmployee = async (id, data) => {
-    const response = await api.patch(`/accounts/employees/${id}/`, data);
-    return response.data;
+  const response = await api.patch(`/accounts/employees/${id}/`, data);
+  return response.data;
 };
 
-export const punchAttendance = async () => { 
+export const punchAttendance = async () => {
   const response = await api.post('/accounts/attendance/punch/');
   return response.data;
 };
 
 export const getEmployeeAttendance = async (employeeId) => {
-    const response = await api.get(`/accounts/attendance/?employee=${employeeId}`);
-    return response.data;
+  const response = await api.get(`/accounts/attendance/?employee=${employeeId}`);
+  return response.data;
 };
 
 // --- BOOKINGS & JOB TIMER ---
@@ -132,28 +143,28 @@ export const createBooking = async (bookingData) => {
 };
 
 export const getMyBookings = async () => {
-  const response = await api.get('/bookings/bookings/'); 
+  const response = await api.get('/bookings/bookings/');
   return response.data;
 };
 
 // 🔥 FIX: Updated getQueue to accept Date Filter (Solves 500 Error)
 export const getQueue = async (date) => {
   const url = date ? `/bookings/bookings/?date=${date}` : '/bookings/bookings/';
-  const response = await api.get(url); 
+  const response = await api.get(url);
   return response.data;
 };
 
 export const updateBookingStatus = async (id, statusData) => {
-    const response = await api.patch(`/bookings/bookings/${id}/`, statusData);
-    return response.data;
+  const response = await api.patch(`/bookings/bookings/${id}/`, statusData);
+  return response.data;
 };
 
-export const startJob = async (id) => { 
+export const startJob = async (id) => {
   const response = await api.post(`/bookings/bookings/${id}/start_job/`);
   return response.data;
 };
 
-export const finishJob = async (id) => { 
+export const finishJob = async (id) => {
   const response = await api.post(`/bookings/bookings/${id}/finish_job/`);
   return response.data;
 };
@@ -163,7 +174,7 @@ export const cancelBooking = async (id) => {
   return response.data;
 };
 
-export const rescheduleBooking = async (id) => { 
+export const rescheduleBooking = async (id) => {
   const response = await api.post(`/bookings/bookings/${id}/reschedule/`);
   return response.data;
 };
@@ -182,7 +193,7 @@ export const createProduct = async (productData) => {
 // Add inside src/services/api.js
 export const updateService = async (id, serviceData) => {
   const response = await api.patch(`/services/services/${id}/`, serviceData, {
-    headers: { 'Content-Type': 'multipart/form-data' } 
+    headers: { 'Content-Type': 'multipart/form-data' }
   });
   return response.data;
 };

@@ -7,14 +7,18 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null); // Stores full user details (id, username, email...)
-    const [loading, setLoading] = useState(true); // To prevent flickering on load
+    const [user, setUser] = useState(null);
+    const [authTokens, setAuthTokens] = useState(() => {
+        const access = localStorage.getItem('access_token');
+        const refresh = localStorage.getItem('refresh_token');
+        return access ? { access, refresh } : null;
+    });
+    const [loading, setLoading] = useState(true);
 
     // 🔄 1. Check if user is already logged in (On Page Load)
     useEffect(() => {
         const initAuth = async () => {
-            const token = localStorage.getItem('access_token');
-            if (token) {
+            if (authTokens) {
                 try {
                     const userData = await getUserProfile();
                     setUser(userData);
@@ -26,25 +30,47 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         };
         initAuth();
-    }, []);
+    }, []); // Run once on mount
 
-    // 🔐 2. Login Function
+    // 🔐 2. Unified Login Success Handler (Used by Google & Standard Login)
+    const loginSuccess = (data) => {
+        // data expected: { access, refresh, user }
+        setAuthTokens({ access: data.access, refresh: data.refresh });
+        setUser(data.user);
+
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+    };
+
+    // 🔐 3. Standard Login Function (Email/Pass)
     const login = async (email, password) => {
-        await apiLogin(email, password);
+        const data = await apiLogin(email, password);
+        // apiLogin returns { access, refresh } but we need to fetch user profile manually 
+        // OR standard login response should be updated to return user data too (like GoogleLoginView).
+        // For now, we fetch profile separately if data.user is missing.
 
-        const userData = await getUserProfile();
-        setUser(userData);
+        let userData = data.user;
+        if (!userData) {
+            // If apiLogin doesn't return user, fetch it.
+            // Helper: temporarily set tokens so api call works
+            localStorage.setItem('access_token', data.access);
+            userData = await getUserProfile();
+        }
+
+        // Construct full data object for loginSuccess
+        loginSuccess({ ...data, user: userData });
         return userData;
     };
 
-    // 🚪 3. Logout Function
+    // 🚪 4. Logout Function
     const logout = () => {
         logoutUser(); // Clears LocalStorage
-        setUser(null); // Clears State
+        setAuthTokens(null);
+        setUser(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, authTokens, login, loginSuccess, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );
