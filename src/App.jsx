@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext'; 
+import { useAuth } from './context/AuthContext';
 
 // Components
 import IntroScreen from './components/IntroScreen';
 import Loader from './components/Loader';
-import Navbar from './components/Navbar'; 
+import Navbar from './components/Navbar';
 import AdminLayout from './components/AdminLayout'; // 🔥 New Layout
 
 // Pages - Public
@@ -30,6 +30,8 @@ import AdminBookings from './pages/admin/AdminBookings';
 // Pages - Employee
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 
+import { Toaster } from 'react-hot-toast';
+
 const AppContent = () => {
   const location = useLocation();
   const { user, loading } = useAuth();
@@ -37,7 +39,10 @@ const AppContent = () => {
   const [firstLoadDone, setFirstLoadDone] = useState(false);
 
   useEffect(() => {
-    if (!firstLoadDone) { setFirstLoadDone(true); return; }
+    if (!firstLoadDone) {
+      setFirstLoadDone(true);
+      return;
+    }
     setPageLoading(true);
     const timer = setTimeout(() => setPageLoading(false), 1000);
     return () => clearTimeout(timer);
@@ -62,9 +67,12 @@ const AppContent = () => {
 
   return (
     <>
+      <Toaster position="top-right" toastOptions={{ className: 'z-[9999]', duration: 4000 }} />
       {pageLoading && <Loader />}
-      {!isDashboard && <Navbar />} 
-      
+      {!isDashboard && <Navbar />}
+
+      {/* ... rest of the code ... */}
+
       <div className={`transition-opacity duration-500 pb-24 md:pb-0 ${pageLoading ? "opacity-0" : "opacity-100"}`}>
         <Routes>
           {/* Public */}
@@ -81,11 +89,11 @@ const AppContent = () => {
 
           {/* 🔥 NEW NESTED ADMIN ROUTES */}
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-             <Route index element={<AdminDashboard />} /> {/* Main Dashboard */}
-             <Route path="services" element={<AdminServices />} />
-             <Route path="employees" element={<AdminEmployees />} />
-             <Route path="inventory" element={<AdminInventory />} />
-             <Route path="bookings" element={<AdminBookings />} />
+            <Route index element={<AdminDashboard />} /> {/* Main Dashboard */}
+            <Route path="services" element={<AdminServices />} />
+            <Route path="employees" element={<AdminEmployees />} />
+            <Route path="inventory" element={<AdminInventory />} />
+            <Route path="bookings" element={<AdminBookings />} />
           </Route>
 
           {/* Employee */}

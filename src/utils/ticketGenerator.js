@@ -1,88 +1,83 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // 🔥 Fix: Import Default
+import jsPDF from 'jspdf';
 
 export const generateTicketPDF = (booking) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: [80, 140] // Dimensions like a receipt/ticket
+  });
 
-  // --- 1. HEADER ---
-  doc.setFillColor(63, 13, 18);
-  doc.rect(0, 0, 210, 40, "F");
-  
+  // Background
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, 80, 140, 'F');
+
+  // Header
+  doc.setFillColor(63, 13, 18); // #3F0D12
+  doc.rect(0, 0, 80, 25, 'F');
+
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.text("HairWays", 105, 20, null, null, "center");
-  
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "normal");
-  doc.text("Booking Confirmation Ticket", 105, 30, null, null, "center");
+  doc.setFontSize(16);
+  doc.setFont('times', 'bold');
+  doc.text("Hair Ways", 40, 12, { align: 'center' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text("Booking Confirmation", 40, 18, { align: 'center' });
 
-  // --- 2. TOKEN ---
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-  doc.text("TOKEN NUMBER", 105, 55, null, null, "center");
-  
-  doc.setFontSize(30);
-  doc.setTextColor(215, 38, 56);
-  doc.setFont("helvetica", "bold");
-  doc.text(booking.token_number, 105, 68, null, null, "center");
-
-  // --- 3. DETAILS ---
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-
-  const startY = 85;
-  doc.text("Date:", 20, startY);
-  doc.setFont("helvetica", "bold");
-  doc.text(booking.booking_date, 50, startY);
-  
-  doc.setFont("helvetica", "normal");
-  doc.text("Time:", 120, startY);
-  doc.setFont("helvetica", "bold");
-  doc.text(booking.booking_time, 150, startY);
-
-  const row2Y = startY + 10;
-  doc.setFont("helvetica", "normal");
-  doc.text("Stylist:", 20, row2Y);
-  doc.setFont("helvetica", "bold");
-  doc.text(booking.employee_details?.user_details?.username || "Stylist", 50, row2Y);
-
-  // --- 4. SERVICES TABLE (Fix applied here) ---
-  const tableColumn = ["Service Name", "Duration", "Price (Rs)"];
-  const tableRows = [];
-
-  booking.items.forEach(item => {
-    tableRows.push([
-      item.service_name,
-      `${item.service_duration} mins`,
-      item.price,
-    ]);
-  });
-
-  // 🔥 Fix: Using imported autoTable function
-  autoTable(doc, {
-    head: [tableColumn],
-    body: tableRows,
-    startY: 110,
-    theme: 'grid',
-    headStyles: { fillColor: [63, 13, 18], textColor: [255, 255, 255] },
-    styles: { fontSize: 10, cellPadding: 3 },
-  });
-
-  // --- 5. TOTAL & FOOTER ---
-  // doc.lastAutoTable.finalY might not work directly with function call, so we estimate or use hook
-  const finalY = (doc.lastAutoTable?.finalY || 150) + 10; 
-  
-  doc.setFontSize(14);
+  // Token Number
   doc.setTextColor(63, 13, 18);
-  doc.setFont("helvetica", "bold");
-  doc.text(`Total Paid: Rs. ${booking.total_price}`, 190, finalY, null, null, "right");
+  doc.setFontSize(10);
+  doc.text("QUEUE TOKEN", 40, 35, { align: 'center' });
+  doc.setFontSize(32);
+  doc.setFont('helvetica', 'bold');
+  doc.text(String(booking.token_number), 40, 48, { align: 'center' });
+
+  // Details
+  let y = 60;
+  const addRow = (label, value) => {
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150); // Gray
+    doc.text(label.toUpperCase(), 10, y);
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0); // Black
+    doc.text(String(value), 70, y, { align: 'right' });
+    y += 10;
+  };
+
+  doc.setDrawColor(230, 230, 230);
+  doc.line(10, 55, 70, 55); // Divider
+
+  addRow("Date", booking.booking_date);
+  addRow("Time", booking.booking_time);
+  addRow("Stylist", booking.employee_details?.user_details?.username || "Any");
+
+  // Services
+  y += 5;
+  doc.line(10, y - 5, 70, y - 5);
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text("SERVICES", 10, y);
+  y += 5;
 
   doc.setFontSize(9);
-  doc.setTextColor(150, 150, 150);
-  doc.setFont("helvetica", "normal");
-  doc.text("Thank you for choosing HairWays.", 105, finalY + 20, null, null, "center");
+  doc.setTextColor(0, 0, 0);
+  if (booking.items && booking.items.length > 0) {
+    booking.items.forEach(item => {
+      doc.text(`• ${item.service_name}`, 10, y);
+      y += 5;
+    });
+  } else {
+    doc.text("• Custom Service", 10, y);
+  }
 
+  // Footer
+  doc.setFillColor(245, 245, 245);
+  doc.rect(0, 125, 80, 15, 'F');
+  doc.setFontSize(7);
+  doc.setTextColor(100, 100, 100);
+  doc.text("Thank you for choosing Hair Ways!", 40, 132, { align: 'center' });
+  doc.text("Please arrive 5 mins early.", 40, 136, { align: 'center' });
+
+  // Save
   doc.save(`HairWays_Ticket_${booking.token_number}.pdf`);
 };

@@ -103,6 +103,14 @@ const AdminBookings = () => {
                     onChange={(e) => setSelectedDate(e.target.value)}
                     className="bg-white border border-gray-300 text-[#3F0D12] text-sm rounded-lg font-bold p-1.5 outline-none focus:ring-2 focus:ring-[#3F0D12]"
                 />
+                {selectedDate && (
+                    <button 
+                        onClick={() => setSelectedDate('')}
+                        className="ml-2 text-xs font-bold text-red-500 hover:text-red-700 underline"
+                    >
+                        Show All
+                    </button>
+                )}
             </div>
         </div>
 

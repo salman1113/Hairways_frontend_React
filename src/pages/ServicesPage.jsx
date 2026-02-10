@@ -1,56 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import { getServices } from '../services/api';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { getServices, getCategories } from '../services/api';
+import { Loader2, Search } from 'lucide-react';
+
+// Components
+import ServiceCard from '../components/services/ServiceCard';
+import CategoryFilter from '../components/services/CategoryFilter';
 
 const ServicesPage = () => {
   const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+
+  // Filter States
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    getServices().then(setServices).finally(() => setLoading(false));
+    const loadData = async () => {
+      try {
+        const [srvData, catData] = await Promise.all([getServices(), getCategories()]);
+        setServices(srvData);
+        setCategories(catData);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
-  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-[var(--accent-crimson)]" size={40} /></div>;
+  // Filter Logic
+  const filteredServices = useMemo(() => {
+    return services.filter(service => {
+      const matchesCategory = activeCategory ? service.category === activeCategory : true;
+      const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (service.description && service.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    });
+  }, [services, activeCategory, searchQuery]);
+
+  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-[#D72638]" size={40} /></div>;
 
   return (
-    <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto min-h-screen animate-fade-in">
-      
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-5xl font-serif font-bold text-[var(--text-primary)] mb-4">Our Services</h1>
-        <p className="text-[var(--text-secondary)] max-w-2xl mx-auto">
-          Explore our wide range of premium grooming services designed to make you look and feel your best.
-        </p>
+    <div className="min-h-screen bg-gray-50 pb-20">
+
+      {/* Hero Section */}
+      <div className="bg-[#3F0D12] text-white pt-32 pb-16 px-6 text-center rounded-b-[3rem] shadow-xl mb-8 relative overflow-hidden">
+        {/* Background Pattern (Optional) */}
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+
+        <div className="relative z-10 max-w-2xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 animate-fade-in-up">Our Premium Menu</h1>
+          <p className="text-gray-300 mb-8 animate-fade-in-up delay-100">
+            Discover the perfect treatment for your style. From classic cuts to rejuvenating facials.
+          </p>
+
+          {/* Search Bar */}
+          <div className="relative max-w-lg mx-auto animate-fade-in-up delay-200">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+              <Search className="text-gray-400" size={20} />
+            </div>
+            <input
+              type="text"
+              placeholder="Search for 'Haircut', 'Facial'..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 rounded-full text-gray-900 bg-white/95 backdrop-blur shadow-lg focus:outline-none focus:ring-4 focus:ring-[#D72638]/30 transition-all font-medium"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {services.map((service) => (
-          <div key={service.id} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl overflow-hidden hover:shadow-xl transition-all group">
-             <div className="h-64 overflow-hidden">
-                <img 
-                  src={service.image || "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800"} 
-                  alt={service.name} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-             </div>
-             <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                   <h3 className="text-xl font-bold font-serif text-[var(--text-primary)]">{service.name}</h3>
-                   <span className="text-lg font-bold text-[var(--accent-crimson)]">₹{service.price}</span>
-                </div>
-                <p className="text-[var(--text-secondary)] text-sm mb-6 line-clamp-2">
-                   {service.description || "A premium service tailored for your style."}
-                </p>
-                <button 
-                   onClick={() => navigate('/book', { state: { selectedService: service } })}
-                   className="w-full py-3 border border-[var(--text-primary)] text-[var(--text-primary)] rounded-xl font-bold hover:bg-[var(--text-primary)] hover:text-white transition-all flex items-center justify-center gap-2"
-                >
-                   Book Now <ArrowRight size={16} />
-                </button>
-             </div>
+      {/* Category Filter */}
+      <CategoryFilter
+        categories={categories}
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
+      />
+
+      {/* Services Grid */}
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-[#3F0D12] font-serif">
+            {activeCategory ? categories.find(c => c.id === activeCategory)?.name : 'All Services'}
+          </h2>
+          <span className="text-gray-500 text-sm font-medium">{filteredServices.length} results</span>
+        </div>
+
+        {filteredServices.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
+            {filteredServices.map(service => (
+              <ServiceCard key={service.id} service={service} />
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="text-center py-20">
+            <p className="text-gray-400 text-lg">No services found matching your criteria.</p>
+            <button onClick={() => { setActiveCategory(null); setSearchQuery(''); }} className="mt-4 text-[#D72638] font-bold hover:underline">
+              Clear Filters
+            </button>
+          </div>
+        )}
       </div>
 
     </div>

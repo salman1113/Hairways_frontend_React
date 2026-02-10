@@ -38,7 +38,6 @@ const LoginPage = () => {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      console.log("Google Credential Response:", credentialResponse);
       const data = await googleLogin(credentialResponse.credential);
 
       if (data.access) {

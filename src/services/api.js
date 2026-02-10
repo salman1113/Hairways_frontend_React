@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 // 1. BASE URL
-// 1. BASE URL
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 const api = axios.create({
@@ -20,49 +19,81 @@ api.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// 3. Response Interceptor (Handle 401 & Errors)
+// 3. Response Interceptor (Handle 401 & Silent Refresh)
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
-        window.location.href = '/login';
+    const originalRequest = error.config;
+
+    // Check if error is 401 and we haven't retried yet
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const refreshToken = localStorage.getItem('refresh_token');
+
+      if (refreshToken) {
+        try {
+          // Attempt to refresh token
+          const response = await axios.post(`${API_URL}/accounts/login/refresh/`, {
+            refresh: refreshToken
+          });
+
+          // If successful, save new access token
+          const newAccessToken = response.data.access;
+          localStorage.setItem('access_token', newAccessToken);
+
+          // Update header and retry original request
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest);
+
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+          // If refresh fails, THEN logout
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+            window.location.href = '/login';
+          }
+        }
+      } else {
+        // No refresh token available, logout
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);
   }
 );
 
-// --- AUTH ---
+// --- AUTHENTICATION ---
 export const loginUser = async (email, password) => {
   const response = await api.post('/accounts/login/', { email, password });
-  if (response.data.access) {
-    localStorage.setItem('access_token', response.data.access);
-    localStorage.setItem('refresh_token', response.data.refresh);
-  }
+  // Response: { access, refresh, ?user }
   return response.data;
 };
 
 export const googleLogin = async (idToken) => {
-  try {
-    const response = await api.post('/accounts/google-login/', {
-      id_token: idToken
-    });
-    return response.data;
-  } catch (error) {
-    throw error.response ? error.response.data : error;
-  }
+  const response = await api.post('/accounts/login/google/', {
+    id_token: idToken
+  });
+  return response.data;
 };
 
 export const registerUser = async (userData) => {
-  const response = await api.post('/accounts/users/', userData);
+  const response = await api.post('/accounts/register/', userData);
   return response.data;
 };
 
 export const getUserProfile = async () => {
-  const response = await api.get('/accounts/users/me/');
+  const response = await api.get('/accounts/me/');
+  return response.data;
+};
+
+export const updateUserProfile = async (data) => {
+  const response = await api.patch('/accounts/me/', data);
   return response.data;
 };
 
@@ -72,18 +103,11 @@ export const logoutUser = () => {
   window.location.href = '/login';
 };
 
-// --- ADMIN & SERVICES ---
-export const getAdminStats = async () => {
-  const response = await api.get('/bookings/bookings/stats/');
-  return response.data;
-};
-
+// --- SERVICES & PRODUCTS (INVENTORY) ---
 export const getCategories = async () => {
   const response = await api.get('/services/categories/');
   return response.data;
 };
-
-// ... existing getCategories ...
 
 export const createCategory = async (data) => {
   const response = await api.post('/services/categories/', data);
@@ -92,9 +116,7 @@ export const createCategory = async (data) => {
 
 export const deleteCategory = async (id) => {
   await api.delete(`/services/categories/${id}/`);
-  return response.data;
 };
-
 
 export const getServices = async () => {
   const response = await api.get('/services/services/');
@@ -102,14 +124,30 @@ export const getServices = async () => {
 };
 
 export const createService = async (serviceData) => {
-  const response = await api.post('/services/services/', serviceData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+  // Check if sending FormData (image) or JSON
+  const headers = serviceData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {};
+  const response = await api.post('/services/services/', serviceData, { headers });
+  return response.data;
+};
+
+export const updateService = async (id, serviceData) => {
+  const headers = serviceData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {};
+  const response = await api.patch(`/services/services/${id}/`, serviceData, { headers });
   return response.data;
 };
 
 export const deleteService = async (id) => {
   await api.delete(`/services/services/${id}/`);
+};
+
+export const getProducts = async () => {
+  const response = await api.get('/services/products/');
+  return response.data;
+};
+
+export const createProduct = async (productData) => {
+  const response = await api.post('/services/products/', productData);
+  return response.data;
 };
 
 // --- EMPLOYEES & ATTENDANCE ---
@@ -133,11 +171,18 @@ export const punchAttendance = async () => {
 };
 
 export const getEmployeeAttendance = async (employeeId) => {
-  const response = await api.get(`/accounts/attendance/?employee=${employeeId}`);
+  const url = employeeId ? `/accounts/attendance/?employee=${employeeId}` : '/accounts/attendance/';
+  const response = await api.get(url);
   return response.data;
 };
 
-// --- BOOKINGS & JOB TIMER ---
+export const getEmployeeDashboard = async () => {
+  const response = await api.get('/bookings/employee/dashboard/');
+  return response.data;
+};
+
+
+// --- BOOKINGS ---
 export const createBooking = async (bookingData) => {
   const response = await api.post('/bookings/bookings/', bookingData);
   return response.data;
@@ -148,7 +193,6 @@ export const getMyBookings = async () => {
   return response.data;
 };
 
-// 🔥 FIX: Updated getQueue to accept Date Filter (Solves 500 Error)
 export const getQueue = async (date) => {
   const url = date ? `/bookings/bookings/?date=${date}` : '/bookings/bookings/';
   const response = await api.get(url);
@@ -160,6 +204,27 @@ export const updateBookingStatus = async (id, statusData) => {
   return response.data;
 };
 
+export const getBookingDetails = async (id) => {
+  const response = await api.get(`/bookings/bookings/${id}/`);
+  return response.data;
+};
+
+export const cancelBooking = async (id) => {
+  const response = await api.post(`/bookings/bookings/${id}/cancel/`);
+  return response.data;
+};
+
+export const rescheduleBooking = async (id) => {
+  const response = await api.post(`/bookings/bookings/${id}/reschedule/`);
+  return response.data;
+};
+
+export const trackBooking = async (id) => {
+  const response = await api.get(`/bookings/bookings/${id}/track/`);
+  return response.data;
+};
+
+// --- JOB TIMER (EMPLOYEE) ---
 export const startJob = async (id) => {
   const response = await api.post(`/bookings/bookings/${id}/start_job/`);
   return response.data;
@@ -170,32 +235,19 @@ export const finishJob = async (id) => {
   return response.data;
 };
 
-export const cancelBooking = async (id) => {
-  const response = await api.post(`/bookings/bookings/${id}/cancel_booking/`);
+// --- ADMIN STATS & PAYROLL ---
+export const getAdminStats = async () => {
+  const response = await api.get('/bookings/admin/stats/');
   return response.data;
 };
 
-export const rescheduleBooking = async (id) => {
-  const response = await api.post(`/bookings/bookings/${id}/reschedule/`);
+export const getPayroll = async () => {
+  const response = await api.get('/accounts/payroll/');
   return response.data;
 };
 
-// --- INVENTORY ---
-export const getProducts = async () => {
-  const response = await api.get('/services/products/');
-  return response.data;
-};
-
-export const createProduct = async (productData) => {
-  const response = await api.post('/services/products/', productData);
-  return response.data;
-};
-
-// Add inside src/services/api.js
-export const updateService = async (id, serviceData) => {
-  const response = await api.patch(`/services/services/${id}/`, serviceData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+export const generatePayroll = async (month) => {
+  const response = await api.post('/accounts/payroll/generate/', { month });
   return response.data;
 };
 

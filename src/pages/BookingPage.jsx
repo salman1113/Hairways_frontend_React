@@ -1,29 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCategories, getServices, getEmployees, createBooking } from '../services/api';
-import { CheckCircle, Loader2, AlertCircle, X, Clock, Calendar, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronRight, ChevronLeft, CheckCircle, User } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+// Components
+import ServiceSelection from '../components/booking/ServiceSelection';
+import StylistSelection from '../components/booking/StylistSelection';
+import TimeSelection from '../components/booking/TimeSelection';
+import BookingSummary from '../components/booking/BookingSummary';
+import SelectionPreview from '../components/booking/SelectionPreview';
 
 const BookingPage = () => {
   const navigate = useNavigate();
-  
+
   // Data States
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Wizard State
+  const [step, setStep] = useState(1);
+  const totalSteps = 4;
+
   // Selection States
-  const [activeCategory, setActiveCategory] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  
   const [submitting, setSubmitting] = useState(false);
-
-  // Modal State
-  const [conflictData, setConflictData] = useState(null);
-  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -34,8 +40,10 @@ const BookingPage = () => {
         setCategories(catData);
         setServices(srvData);
         setEmployees(empData);
-        if(catData.length > 0) setActiveCategory(catData[0].id);
-      } catch (error) { console.error(error); } 
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load salon data");
+      }
       finally { setLoading(false); }
     };
     loadData();
@@ -49,225 +57,182 @@ const BookingPage = () => {
     }
   };
 
-  const calculateTotal = () => {
-    return services
-      .filter(s => selectedServices.includes(s.id))
-      .reduce((sum, s) => sum + Number(s.price), 0);
+  const handleNext = () => {
+    if (step === 1 && selectedServices.length === 0) return toast.error("Please select at least one service! ✂️");
+    if (step === 2 && !selectedEmployee) return toast.error("Please choose a stylist! 👤");
+    if (step === 3 && (!date || !time)) return toast.error("Please pick a date and time! 📅");
+
+    setStep(step + 1);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (selectedServices.length === 0) return alert("Please select at least one service.");
-    if (!selectedEmployee) return alert("Please select a stylist.");
-    if (!date || !time) return alert("Please select date and time.");
+  const handleBack = () => {
+    if (step > 1) setStep(step - 1);
+  };
 
+  const handleSubmit = async () => {
     setSubmitting(true);
-    
-    let cleanTime = Array.isArray(time) ? time[0] : time;
-    cleanTime = String(cleanTime);
+    const toastId = toast.loading("Confirming your booking...");
 
+    const cleanTime = Array.isArray(time) ? time[0] : time;
     const bookingPayload = {
-      service_ids: selectedServices.map(id => Number(id)), 
-      employee: Number(selectedEmployee),     
-      booking_date: date,            
-      booking_time: cleanTime 
+      service_ids: selectedServices.map(id => Number(id)),
+      employee: Number(selectedEmployee),
+      booking_date: date,
+      booking_time: String(cleanTime)
     };
 
     try {
       const response = await createBooking(bookingPayload);
-      navigate('/success', { state: { booking: response } }); 
+      toast.success("Booking Confirmed! 🎉", { id: toastId });
+      navigate('/success', { state: { booking: response } });
     } catch (error) {
       console.error("Booking Error:", error);
+      let errorMsg = "Something went wrong.";
+
       if (error.response && error.response.data) {
-          const errData = error.response.data;
-          if (errData.suggested_time) {
-              const rawSuggestion = errData.suggested_time;
-              const suggestedTime = Array.isArray(rawSuggestion) ? rawSuggestion[0] : rawSuggestion;
-              setConflictData({
-                  requestedTime: cleanTime,
-                  suggestedTime: String(suggestedTime)
-              });
-              setShowModal(true);
-          } else if (errData.message) {
-              alert(errData.message);
-          } else {
-              alert("Booking Failed. Check inputs.");
-          }
-      } else {
-          alert("Network Error.");
+        const errData = error.response.data;
+
+        // Handle Suggestion Logic
+        if (errData.suggested_time) {
+          const suggestion = Array.isArray(errData.suggested_time) ? errData.suggested_time[0] : errData.suggested_time;
+          errorMsg = `Slot busy! 😓 Try ${suggestion}?`;
+          toast((t) => (
+            <div className="flex flex-col gap-2">
+              <span>Slot <b>{cleanTime}</b> is taken.</span>
+              <span className="font-bold">Next available: {suggestion}</span>
+              <button onClick={() => { setTime(suggestion); toast.dismiss(t.id); }}
+                className="bg-[#3F0D12] text-white px-3 py-1 rounded-lg text-xs font-bold mt-1">
+                Switch to {suggestion}
+              </button>
+            </div>
+          ), { id: toastId, duration: 6000, icon: '⚠️' });
+          return; // Exit here, let user switch
+        }
+        else if (errData.message) {
+          errorMsg = errData.message;
+        }
       }
+      toast.error(errorMsg, { id: toastId });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleSwitchTime = () => {
-      if (conflictData) {
-          setTime(conflictData.suggestedTime);
-          setShowModal(false);
-          setConflictData(null);
-      }
-  };
-
-  if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#3F0D12]" size={40}/></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-[#D72638]" size={40} /></div>;
 
   return (
-    // 🔥 FIX: Added 'pt-24' to push content down (avoids navbar overlap)
-    // 🔥 FIX: Removed hardcoded 'bg-[#FBE4E3]' so global theme works
-    <div className="min-h-screen pt-24 pb-32 md:pb-10 px-4 md:px-8 transition-colors duration-300">
-      
-      {/* Custom Modal */}
-      {showModal && conflictData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 relative z-10 animate-fade-in-up border border-[#EACCCC]">
-                <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <X size={24} />
-                </button>
-                <div className="text-center mb-6">
-                    <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <AlertCircle className="text-[#D72638]" size={28} />
-                    </div>
-                    <h3 className="text-xl font-serif font-bold text-[#3F0D12]">Slot Unavailable</h3>
-                    <p className="text-sm text-gray-500 mt-2">
-                        Time <span className="font-bold text-[#3F0D12]">{conflictData.requestedTime}</span> is busy.
-                    </p>
+    <div className="min-h-screen pt-24 pb-32 md:pb-12 px-4 md:px-8 bg-gray-50 transition-colors duration-300 md:flex md:justify-center">
+
+      {/* Grid Container */}
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+        {/* Main Wizard Area */}
+        <div className="lg:col-span-2">
+
+          {/* Progress Bar */}
+          <div className="flex justify-between items-center mb-8 px-4 max-w-lg mx-auto lg:mx-0">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className={`flex flex-col items-center gap-2 relative z-10 w-full`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-500
+                              ${step >= i ? 'bg-[#3F0D12] text-white scale-110 shadow-lg' : 'bg-gray-200 text-gray-400'}`}>
+                  {i < step ? <CheckCircle size={14} /> : i}
                 </div>
-                <div className="bg-gray-50 p-4 rounded-xl flex items-center justify-between mb-6 border border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-white p-2 rounded-lg text-[#D72638]"><Clock size={18} /></div>
-                        <div>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase">Next Available</p>
-                            <p className="text-lg font-black text-[#3F0D12]">{conflictData.suggestedTime}</p>
-                        </div>
-                    </div>
-                    <button onClick={handleSwitchTime} className="text-xs bg-[#3F0D12] text-white px-3 py-1.5 rounded-lg font-bold shadow-md hover:bg-[#5a1a20]">
-                        Switch
-                    </button>
-                </div>
-                <button onClick={() => setShowModal(false)} className="w-full py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 text-sm">
-                    Cancel
-                </button>
+                {/* Connector Line */}
+                {i < 4 && (
+                  <div className={`absolute top-4 left-1/2 w-full h-0.5 -z-10 transition-all duration-500
+                                  ${step > i ? 'bg-[#3F0D12]' : 'bg-gray-200'}`}></div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Step Content */}
+          <div className="bg-white rounded-[2rem] shadow-xl p-6 md:p-8 min-h-[500px] flex flex-col justify-between relative overflow-hidden ring-1 ring-gray-100/50">
+            <div className="flex-1">
+              {step === 1 && <ServiceSelection categories={categories} services={services} selectedServices={selectedServices} toggleService={toggleService} />}
+              {step === 2 && <StylistSelection employees={employees} selectedEmployee={selectedEmployee} setSelectedEmployee={setSelectedEmployee} />}
+              {step === 3 && <TimeSelection date={date} setDate={setDate} time={time} setTime={setTime} />}
+              {step === 4 && <BookingSummary services={services} selectedServices={selectedServices} selectedEmployee={selectedEmployee} employees={employees} date={date} time={time} />}
             </div>
+
+            {/* Desktop Navigation (Moved inside content for mobile feeling but cleaner) */}
+            <div className="hidden md:flex mt-10 justify-between items-center pt-6 border-t border-gray-100">
+              <button
+                onClick={handleBack}
+                disabled={step === 1}
+                className={`flex items-center gap-2 font-bold px-5 py-2.5 rounded-xl transition-all
+                        ${step === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                <ChevronLeft size={20} /> Back
+              </button>
+
+              <button
+                onClick={step === 4 ? handleSubmit : handleNext}
+                disabled={submitting}
+                className="bg-[#3F0D12] text-white px-10 py-3.5 rounded-xl font-bold hover:bg-[#5a1a20] transition shadow-xl hover:shadow-2xl flex items-center gap-2 active:scale-95 disabled:opacity-70 text-lg"
+              >
+                {submitting ? <Loader2 className="animate-spin" size={24} /> :
+                  step === 4 ? "Confirm Booking" : "Next Step"}
+                {!submitting && step < 4 && <ChevronRight size={20} />}
+              </button>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Main Content Wrapper */}
-      <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-        
-        {/* Header - 🔥 Removed 'sticky top-0' to fix overlap */}
-        <div className="bg-[#3F0D12] p-6 text-center text-white relative">
-          <h1 className="text-2xl md:text-3xl font-serif font-bold">Book Appointment</h1>
-          <p className="opacity-80 text-sm mt-1">Select services & stylist.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-5 md:p-8 space-y-8">
-          
-          {/* 1. Services */}
-          <section>
-            <h3 className="text-lg font-bold text-[#3F0D12] mb-3 flex items-center gap-2">
-                <span className="bg-gray-100 text-[#3F0D12] w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span> 
-                Select Services
-            </h3>
-            
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide">
-              {categories.map(cat => (
-                <button type="button" key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all flex-shrink-0
-                  ${activeCategory === cat.id ? 'bg-[#3F0D12] text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}>
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {services.filter(s => s.category === activeCategory).map(service => (
-                <div key={service.id} onClick={() => toggleService(service.id)}
-                  className={`p-4 border rounded-2xl cursor-pointer flex justify-between items-center transition-all active:scale-95
-                  ${selectedServices.includes(service.id) ? 'border-[#D72638] bg-red-50 shadow-sm' : 'border-gray-100 hover:border-gray-300'}`}>
-                  <div>
-                    <h4 className="font-bold text-[#3F0D12] text-sm">{service.name}</h4>
-                    <p className="text-xs text-gray-500 mt-1">₹{service.price} • {service.duration_minutes} mins</p>
-                  </div>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center 
-                      ${selectedServices.includes(service.id) ? 'border-[#D72638] bg-[#D72638]' : 'border-gray-300'}`}>
-                      {selectedServices.includes(service.id) && <CheckCircle className="text-white" size={14}/>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 2. Stylist */}
-          <section>
-            <h3 className="text-lg font-bold text-[#3F0D12] mb-3 flex items-center gap-2">
-                <span className="bg-gray-100 text-[#3F0D12] w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span> 
-                Choose Stylist
-            </h3>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {employees.map(emp => (
-                <div key={emp.id} onClick={() => setSelectedEmployee(emp.id)}
-                  className={`p-3 border rounded-xl cursor-pointer text-center transition-all active:scale-95
-                  ${selectedEmployee === emp.id ? 'border-[#D72638] bg-red-50 shadow-md ring-1 ring-[#D72638]' : 'border-gray-200'}`}>
-                  <div className="w-10 h-10 bg-[#3F0D12] text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold text-sm uppercase">
-                      {emp.user_details?.username?.[0]}
-                  </div>
-                  <h4 className="font-bold text-xs text-[#3F0D12] truncate">{emp.user_details?.username}</h4>
-                  <p className="text-[10px] text-gray-500 truncate">{emp.job_title}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 3. Date & Time */}
-          <section>
-            <h3 className="text-lg font-bold text-[#3F0D12] mb-3 flex items-center gap-2">
-                <span className="bg-gray-100 text-[#3F0D12] w-6 h-6 flex items-center justify-center rounded-full text-xs">3</span> 
-                Date & Time
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="relative">
-                    <label className="text-xs font-bold text-gray-500 mb-1 block">Date</label>
-                    <div className="relative">
-                        <Calendar className="absolute left-3 top-3 text-gray-400" size={16}/>
-                        <input type="date" className="w-full pl-10 p-3 border rounded-xl bg-gray-50 text-sm font-bold text-[#3F0D12] outline-none focus:ring-1 focus:ring-[#3F0D12]"
-                            min={new Date().toISOString().split('T')[0]}
-                            value={date} onChange={(e) => setDate(e.target.value)} required />
-                    </div>
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-gray-500 mb-1 block">Time</label>
-                    <div className="relative">
-                        <Clock className="absolute left-3 top-3 text-gray-400" size={16}/>
-                        <input type="time" className="w-full pl-10 p-3 border rounded-xl bg-gray-50 text-sm font-bold text-[#3F0D12] outline-none focus:ring-1 focus:ring-[#3F0D12]"
-                            value={Array.isArray(time) ? time[0] : time} 
-                            onChange={(e) => setTime(e.target.value)} required />
-                    </div>
-                </div>
-            </div>
-          </section>
-
-          {/* Desktop Submit Button */}
-          <button type="submit" disabled={submitting} 
-            className="hidden md:flex w-full bg-[#3F0D12] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#5a1a20] transition-all items-center justify-center gap-2 shadow-lg">
-            {submitting ? <Loader2 className="animate-spin" /> : "Confirm Booking"}
-          </button>
-
-        </form>
-
-        {/* 🔥 MOBILE STICKY FOOTER (Fixed Bottom) */}
-        <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20">
-            <div className="flex justify-between items-center mb-2">
-                <p className="text-xs text-gray-500 font-bold">{selectedServices.length} Services Selected</p>
-                <p className="text-xl font-black text-[#3F0D12]">₹{calculateTotal()}</p>
-            </div>
-            <button onClick={handleSubmit} disabled={submitting} 
-                className="w-full bg-[#3F0D12] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
-                {submitting ? <Loader2 className="animate-spin" size={20}/> : <>Confirm Booking <ChevronRight size={18}/></>}
-            </button>
+        {/* Sidebar Summary (Desktop) */}
+        <div className="hidden lg:block sticky top-24">
+          <SelectionPreview
+            services={services}
+            selectedServices={selectedServices}
+            employees={employees}
+            selectedEmployee={selectedEmployee}
+            date={date}
+            time={time}
+            toggleService={toggleService}
+          />
         </div>
 
       </div>
+
+      {/* Mobile Bottom Bar (Sticky) */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 rounded-t-3xl">
+        <div className="flex items-center justify-between gap-4">
+          {/* Mini Preview */}
+          <div className="flex-1">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{selectedServices.length} Selected • {step}/4</p>
+            <div className="flex items-center gap-2 overflow-hidden">
+              <span className="text-xl font-black text-[#3F0D12]">
+                ₹{services.filter(s => selectedServices.includes(s.id)).reduce((sum, s) => sum + Number(s.price), 0)}
+              </span>
+              {/* Stylist Pip (if selected) */}
+              {selectedEmployee && (
+                <div className="bg-gray-100 px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-600 flex items-center gap-1">
+                  <User size={10} className="text-[#D72638]" />
+                  {employees.find(e => e.id === Number(selectedEmployee))?.user_details?.username}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Nav Buttons */}
+          <div className="flex gap-2">
+            {step > 1 && (
+              <button onClick={handleBack} className="p-3 rounded-xl bg-gray-100 text-gray-600">
+                <ChevronLeft size={20} />
+              </button>
+            )}
+            <button
+              onClick={step === 4 ? handleSubmit : handleNext}
+              disabled={submitting}
+              className="bg-[#3F0D12] text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-80"
+            >
+              {submitting ? <Loader2 className="animate-spin" size={18} /> :
+                step === 4 ? "Confirm" : "Next"}
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };
