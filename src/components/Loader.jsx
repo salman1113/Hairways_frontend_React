@@ -1,31 +1,24 @@
 import React from 'react';
-import { Scissors } from 'lucide-react';
 
 const Loader = () => {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--bg-secondary)]/90 backdrop-blur-lg transition-colors duration-300">
-      
-      <div className="flex flex-col items-center">
-        
-        {/* Scissor Circle */}
-        <div className="relative p-6 rounded-full border border-[var(--border-color)] shadow-2xl bg-[var(--bg-primary)] ring-1 ring-[var(--border-color)]">
-          
-          <Scissors 
-            size={48} 
-            className="animate-snip text-[var(--accent-crimson)] drop-shadow-md" 
-          />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0B0B0B]">
+      <div className="flex flex-col items-center gap-6">
+        {/* Animated Spinner with Gold Accent */}
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 border-4 border-[#1A1A1A] rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-t-[#C19D6C] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
         </div>
 
         {/* Loading Text */}
-        <h2 className="mt-8 text-sm font-serif font-bold tracking-[0.3em] text-[var(--text-primary)] animate-pulse">
-          LOADING...
-        </h2>
-
-        {/* Loading Bar */}
-        <div className="w-24 h-1 bg-[var(--border-color)] rounded-full mt-4 overflow-hidden">
-            <div className="h-full bg-[var(--accent-crimson)] w-1/2 animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-white tracking-widest uppercase">
+            Hair Ways
+          </h2>
+          <p className="text-[10px] text-[#C19D6C] font-bold uppercase tracking-[0.3em] mt-2 animate-pulse">
+            Loading...
+          </p>
         </div>
-
       </div>
     </div>
   );

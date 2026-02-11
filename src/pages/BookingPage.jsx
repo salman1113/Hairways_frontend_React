@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCategories, getServices, getEmployees, createBooking } from '../services/api';
-import { Loader2, ChevronRight, ChevronLeft, CheckCircle, User } from 'lucide-react';
+import { Loader2, ChevronRight, ChevronLeft, CheckCircle, Phone, MapPin, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 // Components
@@ -9,28 +10,28 @@ import ServiceSelection from '../components/booking/ServiceSelection';
 import StylistSelection from '../components/booking/StylistSelection';
 import TimeSelection from '../components/booking/TimeSelection';
 import BookingSummary from '../components/booking/BookingSummary';
-import SelectionPreview from '../components/booking/SelectionPreview';
 
 const BookingPage = () => {
   const navigate = useNavigate();
 
-  // Data States
+  // --- DATA STATES ---
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Wizard State
+  // --- WIZARD STATE ---
   const [step, setStep] = useState(1);
   const totalSteps = 4;
 
-  // Selection States
+  // --- SELECTION STATES ---
   const [selectedServices, setSelectedServices] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // --- LOAD DATA ---
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -49,6 +50,7 @@ const BookingPage = () => {
     loadData();
   }, []);
 
+  // --- HANDLERS ---
   const toggleService = (id) => {
     if (selectedServices.includes(id)) {
       setSelectedServices(selectedServices.filter(s => s !== id));
@@ -101,12 +103,12 @@ const BookingPage = () => {
               <span>Slot <b>{cleanTime}</b> is taken.</span>
               <span className="font-bold">Next available: {suggestion}</span>
               <button onClick={() => { setTime(suggestion); toast.dismiss(t.id); }}
-                className="bg-[#3F0D12] text-white px-3 py-1 rounded-lg text-xs font-bold mt-1">
+                className="bg-[#C19D6C] text-black px-3 py-1 rounded-lg text-xs font-bold mt-1">
                 Switch to {suggestion}
               </button>
             </div>
           ), { id: toastId, duration: 6000, icon: '⚠️' });
-          return; // Exit here, let user switch
+          return;
         }
         else if (errData.message) {
           errorMsg = errData.message;
@@ -118,121 +120,106 @@ const BookingPage = () => {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-[#D72638]" size={40} /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#0B0B0B]"><Loader2 className="animate-spin text-[#C19D6C]" size={40} /></div>;
 
   return (
-    <div className="min-h-screen pt-24 pb-32 md:pb-12 px-4 md:px-8 bg-gray-50 transition-colors duration-300 md:flex md:justify-center">
+    <div className="bg-white min-h-screen">
 
-      {/* Grid Container */}
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-
-        {/* Main Wizard Area */}
-        <div className="lg:col-span-2">
-
-          {/* Progress Bar */}
-          <div className="flex justify-between items-center mb-8 px-4 max-w-lg mx-auto lg:mx-0">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className={`flex flex-col items-center gap-2 relative z-10 w-full`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-500
-                              ${step >= i ? 'bg-[#3F0D12] text-white scale-110 shadow-lg' : 'bg-gray-200 text-gray-400'}`}>
-                  {i < step ? <CheckCircle size={14} /> : i}
-                </div>
-                {/* Connector Line */}
-                {i < 4 && (
-                  <div className={`absolute top-4 left-1/2 w-full h-0.5 -z-10 transition-all duration-500
-                                  ${step > i ? 'bg-[#3F0D12]' : 'bg-gray-200'}`}></div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Step Content */}
-          <div className="bg-white rounded-[2rem] shadow-xl p-6 md:p-8 min-h-[500px] flex flex-col justify-between relative overflow-hidden ring-1 ring-gray-100/50">
-            <div className="flex-1">
-              {step === 1 && <ServiceSelection categories={categories} services={services} selectedServices={selectedServices} toggleService={toggleService} />}
-              {step === 2 && <StylistSelection employees={employees} selectedEmployee={selectedEmployee} setSelectedEmployee={setSelectedEmployee} />}
-              {step === 3 && <TimeSelection date={date} setDate={setDate} time={time} setTime={setTime} />}
-              {step === 4 && <BookingSummary services={services} selectedServices={selectedServices} selectedEmployee={selectedEmployee} employees={employees} date={date} time={time} />}
-            </div>
-
-            {/* Desktop Navigation (Moved inside content for mobile feeling but cleaner) */}
-            <div className="hidden md:flex mt-10 justify-between items-center pt-6 border-t border-gray-100">
-              <button
-                onClick={handleBack}
-                disabled={step === 1}
-                className={`flex items-center gap-2 font-bold px-5 py-2.5 rounded-xl transition-all
-                        ${step === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}
-              >
-                <ChevronLeft size={20} /> Back
-              </button>
-
-              <button
-                onClick={step === 4 ? handleSubmit : handleNext}
-                disabled={submitting}
-                className="bg-[#3F0D12] text-white px-10 py-3.5 rounded-xl font-bold hover:bg-[#5a1a20] transition shadow-xl hover:shadow-2xl flex items-center gap-2 active:scale-95 disabled:opacity-70 text-lg"
-              >
-                {submitting ? <Loader2 className="animate-spin" size={24} /> :
-                  step === 4 ? "Confirm Booking" : "Next Step"}
-                {!submitting && step < 4 && <ChevronRight size={20} />}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar Summary (Desktop) */}
-        <div className="hidden lg:block sticky top-24">
-          <SelectionPreview
-            services={services}
-            selectedServices={selectedServices}
-            employees={employees}
-            selectedEmployee={selectedEmployee}
-            date={date}
-            time={time}
-            toggleService={toggleService}
-          />
-        </div>
-
+      {/* 1. HERO SECTION */}
+      <div className="relative h-[30vh] md:h-[40vh] flex items-center justify-center bg-black overflow-hidden mt-20 md:mt-0">
+        <div className="absolute inset-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center"></div>
+        <h1 className="relative z-10 text-4xl md:text-7xl font-bold text-white tracking-tight text-center px-4">Book Appointment</h1>
       </div>
 
-      {/* Mobile Bottom Bar (Sticky) */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-50 rounded-t-3xl">
-        <div className="flex items-center justify-between gap-4">
-          {/* Mini Preview */}
-          <div className="flex-1">
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{selectedServices.length} Selected • {step}/4</p>
-            <div className="flex items-center gap-2 overflow-hidden">
-              <span className="text-xl font-black text-[#3F0D12]">
-                ₹{services.filter(s => selectedServices.includes(s.id)).reduce((sum, s) => sum + Number(s.price), 0)}
-              </span>
-              {/* Stylist Pip (if selected) */}
-              {selectedEmployee && (
-                <div className="bg-gray-100 px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-600 flex items-center gap-1">
-                  <User size={10} className="text-[#D72638]" />
-                  {employees.find(e => e.id === Number(selectedEmployee))?.user_details?.username}
-                </div>
-              )}
+      {/* 2. SPLIT LAYOUT */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+
+        {/* LEFT SIDE: Info */}
+        <motion.div
+          initial={{ x: -50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          className="space-y-6 md:space-y-10 order-2 lg:order-1"
+        >
+          <div>
+            <span className="text-[#C19D6C] font-bold uppercase tracking-widest text-xs mb-2 block">Premium Service</span>
+            <h2 className="text-3xl md:text-5xl font-bold text-[#1A1A1A] leading-tight">Get the look you love — <br className="hidden md:block" />schedule your visit.</h2>
+            <p className="text-gray-600 mt-4 text-base md:text-lg leading-relaxed">Choose your preferred service and stylist. We are ready to make you shine with our expert grooming services.</p>
+          </div>
+
+          <div className="space-y-4 md:space-y-6 pt-4 border-t border-gray-100">
+            <div className="flex gap-4 items-center group cursor-pointer">
+              <div className="w-12 h-12 md:w-14 md:h-14 bg-[#FAFAFA] rounded-full flex items-center justify-center text-[#C19D6C] group-hover:bg-[#C19D6C] group-hover:text-white transition duration-300"><Phone size={20} className="md:w-6 md:h-6" /></div>
+              <div><p className="font-bold text-[#1A1A1A] text-sm md:text-base">Phone</p><p className="text-gray-500 text-sm md:text-base">+91 98765 43210</p></div>
+            </div>
+            <div className="flex gap-4 items-center group cursor-pointer">
+              <div className="w-12 h-12 md:w-14 md:h-14 bg-[#FAFAFA] rounded-full flex items-center justify-center text-[#C19D6C] group-hover:bg-[#C19D6C] group-hover:text-white transition duration-300"><MapPin size={20} className="md:w-6 md:h-6" /></div>
+              <div><p className="font-bold text-[#1A1A1A] text-sm md:text-base">Address</p><p className="text-gray-500 text-sm md:text-base">Perambra, Calicut, Kerala</p></div>
+            </div>
+            <div className="flex gap-4 items-center group cursor-pointer">
+              <div className="w-12 h-12 md:w-14 md:h-14 bg-[#FAFAFA] rounded-full flex items-center justify-center text-[#C19D6C] group-hover:bg-[#C19D6C] group-hover:text-white transition duration-300"><Clock size={20} className="md:w-6 md:h-6" /></div>
+              <div><p className="font-bold text-[#1A1A1A] text-sm md:text-base">Opening Hours</p><p className="text-gray-500 text-sm md:text-base">Mon - Sun: 9:00 AM - 9:00 PM</p></div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* RIGHT SIDE: Booking Form Container (Black Box) */}
+        <motion.div
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="bg-[#1A1A1A] p-5 md:p-10 rounded-[2rem] md:rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden order-1 lg:order-2"
+        >
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#C19D6C] rounded-full mix-blend-overlay filter blur-[100px] opacity-20 pointer-events-none"></div>
+
+          {/* Header */}
+          <div className="mb-6 md:mb-8 flex justify-between items-end">
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold text-white">Book Your Visit</h3>
+              <p className="text-white/60 text-xs md:text-sm mt-1">Step {step} of 4</p>
+            </div>
+            {/* Progress Indicators */}
+            <div className="flex gap-1.5 md:gap-2 mb-1">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className={`h-1 md:h-1.5 rounded-full transition-all duration-300 ${step >= i ? 'w-4 md:w-6 bg-[#C19D6C]' : 'w-1.5 md:w-2 bg-[#333]'}`}></div>
+              ))}
             </div>
           </div>
 
-          {/* Nav Buttons */}
-          <div className="flex gap-2">
-            {step > 1 && (
-              <button onClick={handleBack} className="p-3 rounded-xl bg-gray-100 text-gray-600">
-                <ChevronLeft size={20} />
-              </button>
-            )}
+          {/* WIZARD CONTENT - WRAPPED FOR DARK MODE */}
+          <div className="bg-white rounded-xl md:rounded-2xl p-3 md:p-4 min-h-[350px] md:min-h-[400px] text-[#1A1A1A] shadow-inner mb-6 md:mb-8">
+            {step === 1 && <ServiceSelection categories={categories} services={services} selectedServices={selectedServices} toggleService={toggleService} />}
+            {step === 2 && <StylistSelection employees={employees} selectedEmployee={selectedEmployee} setSelectedEmployee={setSelectedEmployee} />}
+            {step === 3 && <TimeSelection date={date} setDate={setDate} time={time} setTime={setTime} />}
+            {step === 4 && <BookingSummary services={services} selectedServices={selectedServices} selectedEmployee={selectedEmployee} employees={employees} date={date} time={time} />}
+          </div>
+
+          {/* NAVIGATION BUTTONS */}
+          <div className="flex justify-between items-center">
+            <button
+              onClick={handleBack}
+              disabled={step === 1}
+              className={`flex items-center gap-1 md:gap-2 font-bold px-4 md:px-6 py-2.5 md:py-3 rounded-xl transition-all text-sm md:text-base
+                            ${step === 1 ? 'text-[#333] cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-[#333]'}`}
+            >
+              <ChevronLeft size={18} className="md:w-5 md:h-5" /> Back
+            </button>
+
             <button
               onClick={step === 4 ? handleSubmit : handleNext}
               disabled={submitting}
-              className="bg-[#3F0D12] text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-80"
+              className="bg-[#C19D6C] text-[#1A1A1A] px-6 md:px-8 py-3 md:py-3.5 rounded-xl font-bold hover:bg-white hover:text-black transition shadow-lg flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed text-sm md:text-base"
             >
               {submitting ? <Loader2 className="animate-spin" size={18} /> :
                 step === 4 ? "Confirm" : "Next"}
+              {!submitting && step < 4 && <ChevronRight size={18} className="md:w-5 md:h-5" />}
             </button>
           </div>
-        </div>
-      </div>
 
+        </motion.div>
+
+      </div>
     </div>
   );
 };

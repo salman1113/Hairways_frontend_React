@@ -11,41 +11,41 @@ const BookingSummary = ({ services, selectedServices, selectedEmployee, employee
     return (
         <div className="space-y-6 animate-fade-in-up">
             <div className="text-center">
-                <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
+                <div className="w-16 h-16 bg-[#C19D6C]/10 rounded-full flex items-center justify-center mx-auto mb-4 text-[#C19D6C]">
                     <CheckCircle size={32} />
                 </div>
-                <h2 className="text-2xl font-serif font-bold text-[#3F0D12]">Looking Good!</h2>
+                <h2 className="text-2xl font-bold text-[#1A1A1A]">Looking Good!</h2>
                 <p className="text-gray-500 text-sm">Review your details before confirming.</p>
             </div>
 
             <div className="bg-gray-50 p-6 rounded-3xl border border-gray-200 space-y-6 relative overflow-hidden">
-                {/* Ticket Edge Effect (Visual Only) */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full filter blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
+                {/* Decorative Element */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C19D6C] rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/2"></div>
 
                 {/* Date & Time */}
                 <div className="flex justify-between items-center pb-4 border-b border-dashed border-gray-300 relative z-10">
                     <div className="flex items-center gap-3">
-                        <div className="bg-white p-2.5 rounded-xl text-[#3F0D12] shadow-sm"><Calendar size={18} /></div>
+                        <div className="bg-white p-2.5 rounded-xl text-[#C19D6C] shadow-sm"><Calendar size={18} /></div>
                         <div>
                             <p className="text-xs font-bold text-gray-400 uppercase">Date</p>
-                            <p className="font-bold text-[#3F0D12]">{date}</p>
+                            <p className="font-bold text-[#1A1A1A]">{date}</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="flex items-center justify-end gap-2 text-[#3F0D12]">
-                            <Clock size={16} /> <span className="font-black text-lg">{timeStr}</span>
+                        <div className="flex items-center justify-end gap-2 text-[#1A1A1A]">
+                            <Clock size={16} className="text-[#C19D6C]" /> <span className="font-black text-lg">{timeStr}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Stylist */}
                 <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-12 h-12 bg-[#3F0D12] text-white rounded-full flex items-center justify-center font-bold text-lg">
+                    <div className="w-12 h-12 bg-[#1A1A1A] text-[#C19D6C] rounded-full flex items-center justify-center font-bold text-lg">
                         {employeeDetails?.user_details?.username?.[0] || "S"}
                     </div>
                     <div>
                         <p className="text-xs font-bold text-gray-400 uppercase">Stylist</p>
-                        <h4 className="font-bold text-[#3F0D12]">{employeeDetails?.user_details?.username}</h4>
+                        <h4 className="font-bold text-[#1A1A1A]">{employeeDetails?.user_details?.username}</h4>
                         <p className="text-xs text-gray-500">{employeeDetails?.job_title}</p>
                     </div>
                 </div>
@@ -57,13 +57,13 @@ const BookingSummary = ({ services, selectedServices, selectedEmployee, employee
                         {selectedServiceDetails.map(service => (
                             <div key={service.id} className="flex justify-between text-sm">
                                 <span className="text-gray-700 font-medium">{service.name}</span>
-                                <span className="font-bold text-[#3F0D12]">₹{service.price}</span>
+                                <span className="font-bold text-[#1A1A1A]">₹{service.price}</span>
                             </div>
                         ))}
                     </div>
                     <div className="flex justify-between items-center border-t border-gray-100 pt-3 mt-3">
                         <span className="font-black text-gray-500 uppercase text-xs">Total Amount</span>
-                        <span className="text-xl font-black text-[#D72638]">₹{total}</span>
+                        <span className="text-xl font-black text-[#C19D6C]">₹{total}</span>
                     </div>
                 </div>
             </div>

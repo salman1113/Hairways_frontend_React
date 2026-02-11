@@ -13,6 +13,12 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ServicesPage from './pages/ServicesPage';
 import AboutPage from './pages/AboutPage';
+import TeamPage from './pages/TeamPage';
+import BarberDetails from './pages/BarberDetails'; // 🔥 New Details Page
+import ServiceDetails from './pages/ServiceDetails';
+import GalleryPage from './pages/GalleryPage';
+import ReviewsPage from './pages/ReviewsPage'; // 🔥 New Reviews Page
+import NotFoundPage from './pages/NotFoundPage'; // 🔥 New 404 Page
 import SignupPage from './pages/SignupPage';
 
 // Pages - Customer
@@ -80,7 +86,15 @@ const AppContent = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/services/:id" element={<ServiceDetails />} />
+          <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/reviews" element={<ReviewsPage />} /> {/* 🔥 Reviews Route */}
           <Route path="/about" element={<AboutPage />} />
+
+          {/* Catch-all 404 */}
+          <Route path="*" element={<NotFoundPage />} />
+          <Route path="/team" element={<TeamPage />} />
+          <Route path="/team/:id" element={<BarberDetails />} /> {/* 🔥 Dynamic Route */}
 
           {/* Customer */}
           <Route path="/book" element={<BookingPage />} />

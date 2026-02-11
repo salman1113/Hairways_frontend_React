@@ -4,42 +4,9 @@
 /* 2. Tailwind Import */
 @import "tailwindcss";
 
-:root {
-  /* Luxury Color Palette based on your preference */
-  --bg-primary: #FFF0F1;
-  /* Soft Blush Light */
-  --bg-secondary: #FFFFFF;
-  --text-primary: #3F0D12;
-  /* Bordeaux */
-  --text-secondary: #785A5D;
-  --accent-crimson: #D72638;
-  --border-color: #EACCCC;
-}
-
-.dark {
-  --bg-primary: #2A090C;
-  /* Deep Bordeaux */
-  --bg-secondary: #1F0507;
-  --text-primary: #FBE4E3;
-  --text-secondary: #D4B8BA;
-  --accent-crimson: #FF4D5E;
-  --border-color: #4A1A21;
-}
-
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: 'Playfair Display', serif;
 }
 
 /* Smooth Fade In Animation */
