@@ -17,7 +17,17 @@ const LoginPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const userData = await login(formData.email, formData.password);
+      const response = await login(formData.email, formData.password);
+
+      // Check if Admin OTP is required
+      if (response.require_otp) {
+        navigate('/admin/verify', {
+          state: { email: formData.email, type: 'ADMIN_LOGIN' }
+        });
+        return;
+      }
+
+      const userData = response.user || response; // fallback if user object is top level
 
       if (userData.role === 'ADMIN' || userData.role === 'MANAGER') {
         navigate('/admin');
@@ -28,7 +38,21 @@ const LoginPage = () => {
       }
     } catch (err) {
       console.error(err);
-      setError("Invalid credentials. Please try again.");
+      if (err.response && err.response.status === 403) {
+        // Check if it's an email verification error
+        if (err.response.data.error === "Email not verified" || err.response.data.error.includes("inactive")) {
+          if (window.confirm("Your email is not verified. Would you like to verify it now?")) {
+            navigate('/verify-email', {
+              state: { email: formData.email, type: 'REGISTER' }
+            });
+          }
+          setError("Email not verified.");
+        } else {
+          setError("Access Denied.");
+        }
+      } else {
+        setError("Invalid credentials. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

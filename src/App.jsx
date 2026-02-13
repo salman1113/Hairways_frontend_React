@@ -20,6 +20,7 @@ import GalleryPage from './pages/GalleryPage';
 import ReviewsPage from './pages/ReviewsPage'; // 🔥 New Reviews Page
 import NotFoundPage from './pages/NotFoundPage'; // 🔥 New 404 Page
 import SignupPage from './pages/SignupPage';
+import OTPVerificationPage from './pages/OTPVerificationPage';
 
 // Pages - Customer
 import BookingPage from './pages/BookingPage';
@@ -85,6 +86,8 @@ const AppContent = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/verify-email" element={<OTPVerificationPage />} />
+          <Route path="/admin/verify" element={<OTPVerificationPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/services/:id" element={<ServiceDetails />} />
           <Route path="/gallery" element={<GalleryPage />} />

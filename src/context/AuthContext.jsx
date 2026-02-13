@@ -45,16 +45,23 @@ export const AuthProvider = ({ children }) => {
     // 🔐 3. Standard Login Function (Email/Pass)
     const login = async (email, password) => {
         const data = await apiLogin(email, password);
-        // apiLogin returns { access, refresh } but we need to fetch user profile manually 
-        // OR standard login response should be updated to return user data too (like GoogleLoginView).
-        // For now, we fetch profile separately if data.user is missing.
+
+        // Check for OTP requirement (Admin or unverified)
+        if (data.require_otp) {
+            return data;
+        }
 
         let userData = data.user;
         if (!userData) {
             // If apiLogin doesn't return user, fetch it.
             // Helper: temporarily set tokens so api call works
             localStorage.setItem('access_token', data.access);
-            userData = await getUserProfile();
+            try {
+                userData = await getUserProfile();
+            } catch (error) {
+                console.error("Failed to fetch profile after login:", error);
+                throw error;
+            }
         }
 
         // Construct full data object for loginSuccess

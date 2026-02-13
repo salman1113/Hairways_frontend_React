@@ -24,8 +24,13 @@ const SignupPage = () => {
     try {
       await registerUser(formData);
 
-      alert("Registration Successful! Please Login.");
-      navigate('/login');
+      alert("Registration Successful! Please Verify your Email.");
+      navigate('/verify-email', {
+        state: {
+          email: formData.email,
+          type: 'REGISTER'
+        }
+      });
     } catch (err) {
       console.error("Signup Error:", err);
       if (err.response && err.response.data) {

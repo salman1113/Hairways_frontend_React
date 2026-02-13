@@ -87,6 +87,16 @@ export const registerUser = async (userData) => {
   return response.data;
 };
 
+export const verifyRegistrationOTP = async (email, otp) => {
+  const response = await api.post('/accounts/register/verify/', { email, otp });
+  return response.data;
+};
+
+export const verifyAdminLoginOTP = async (email, otp) => {
+  const response = await api.post('/accounts/login/admin/verify/', { email, otp });
+  return response.data;
+};
+
 export const getUserProfile = async () => {
   const response = await api.get('/accounts/me/');
   return response.data;
