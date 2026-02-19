@@ -10,7 +10,7 @@ const api = axios.create({
   },
 });
 
-// 2. Request Interceptor (Attach Token)
+// 2.Request Interceptor (Attach Token)
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
