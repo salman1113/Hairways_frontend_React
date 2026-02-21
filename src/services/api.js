@@ -48,17 +48,19 @@ api.interceptors.response.use(
 
         } catch (refreshError) {
           console.error("Token refresh failed:", refreshError);
-          // If refresh fails, THEN logout
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          // Only clear and redirect if we're not already on login/signup page
           if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
             window.location.href = '/login';
           }
         }
       } else {
-        // No refresh token available, logout
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        // No refresh token available, redirect if not on public auth pages
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+        }
         if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
           window.location.href = '/login';
         }

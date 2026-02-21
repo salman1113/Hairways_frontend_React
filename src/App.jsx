@@ -70,6 +70,14 @@ const AppContent = () => {
     return children;
   };
 
+  // 🛡️ Redirect authenticated admins from the homepage to the dashboard
+  const HomeOrAdminRedirect = () => {
+    if (user && (user.role === 'ADMIN' || user.role === 'MANAGER')) {
+      return <Navigate to="/admin" replace />;
+    }
+    return <HomePage />;
+  };
+
   const isDashboard = location.pathname.startsWith('/admin') || location.pathname.startsWith('/employee');
 
   return (
@@ -83,7 +91,7 @@ const AppContent = () => {
       <div className={`transition-opacity duration-500 pb-24 md:pb-0 ${pageLoading ? "opacity-0" : "opacity-100"}`}>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<HomeOrAdminRedirect />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/verify-email" element={<OTPVerificationPage />} />

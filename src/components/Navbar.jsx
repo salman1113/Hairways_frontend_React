@@ -26,6 +26,15 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
+  // Calculate destination route based on user role
+  const getProfileRoute = () => {
+    if (!user) return '/login';
+    if (user.role === 'ADMIN' || user.role === 'MANAGER') return '/admin';
+    if (user.role === 'EMPLOYEE') return '/employee';
+    return '/profile';
+  };
+  const profileRoute = getProfileRoute();
+
   // Nav link animation variants
   const linkHover = {
     rest: { width: 0 },
@@ -81,8 +90,8 @@ const Navbar = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         className={`w-full max-w-7xl transition-all duration-500 ${scrolled
-            ? 'mt-3 rounded-2xl bg-[#0A0A0A]/90 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/[0.08] ring-1 ring-[#C19D6C]/10'
-            : 'mt-4 rounded-2xl bg-[#0A0A0A]/95 backdrop-blur-md border border-white/[0.06]'
+          ? 'mt-3 rounded-2xl bg-[#0A0A0A]/90 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/[0.08] ring-1 ring-[#C19D6C]/10'
+          : 'mt-4 rounded-2xl bg-[#0A0A0A]/95 backdrop-blur-md border border-white/[0.06]'
           }`}
       >
         <div className={`px-6 md:px-8 flex justify-between items-center transition-all duration-500 ${scrolled ? 'py-3' : 'py-4'}`}>
@@ -162,15 +171,15 @@ const Navbar = () => {
             <NavLink to="/services">Services</NavLink>
 
             {user ? (
-              <Link to="/profile" className="flex items-center gap-2 transition text-white/90 group ml-4">
+              <Link to={profileRoute} className="flex items-center gap-2 transition text-white/90 group ml-4">
                 <motion.div
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`p-1.5 rounded-full transition ${isActive('/profile') ? 'bg-[#C19D6C]/20' : 'bg-white/10 group-hover:bg-[#C19D6C]/20'}`}
+                  className={`p-1.5 rounded-full transition ${isActive(profileRoute) ? 'bg-[#C19D6C]/20' : 'bg-white/10 group-hover:bg-[#C19D6C]/20'}`}
                 >
-                  <User size={18} className={`transition ${isActive('/profile') ? 'text-[#C19D6C]' : 'text-white/80 group-hover:text-[#C19D6C]'}`} />
+                  <User size={18} className={`transition ${isActive(profileRoute) ? 'text-[#C19D6C]' : 'text-white/80 group-hover:text-[#C19D6C]'}`} />
                 </motion.div>
-                <span className={`font-bold transition ${isActive('/profile') ? 'text-[#C19D6C]' : 'group-hover:text-[#C19D6C]'}`}>
+                <span className={`font-bold transition ${isActive(profileRoute) ? 'text-[#C19D6C]' : 'group-hover:text-[#C19D6C]'}`}>
                   Hi, {user.username}
                 </span>
               </Link>
@@ -248,7 +257,7 @@ const Navbar = () => {
 
               {user ? (
                 <motion.div variants={mobileItemVariants}>
-                  <Link to="/profile" className="flex items-center gap-3 text-lg font-bold text-[#C19D6C]">
+                  <Link to={profileRoute} className="flex items-center gap-3 text-lg font-bold text-[#C19D6C]">
                     <div className="p-2 rounded-full bg-[#C19D6C]/10 border border-[#C19D6C]/20">
                       <User size={20} />
                     </div>
